@@ -1,0 +1,95 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "Motion Start",
+  "projectDescription": "A Svelte animation library inspired by Framer Motion, providing declarative animations, gestures, and motion values.",
+  "theme": "palm",
+  "primaryColor": "#242b2c",
+  "lightColor": "#040404",
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction", "installation", "quickstart"]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": ["concepts/motion-components", "concepts/animations", "concepts/gestures", "concepts/motion-values"]
+          },
+          {
+            "group": "Guides",
+            "pages": ["guides/animate-presence", "guides/shared-layout", "guides/scroll-animations", "guides/drag-and-drop", "guides/spring-animations"]
+          },
+          {
+            "group": "Advanced",
+            "pages": ["advanced/lazy-motion", "advanced/animation-controls", "advanced/custom-components", "advanced/reduced-motion"]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Components",
+            "pages": ["api/motion", "api/animate-presence", "api/animate-shared-layout", "api/motion-config", "api/lazy-motion"]
+          },
+          {
+            "group": "Motion Values",
+            "pages": ["api/motion-value", "api/use-motion-value", "api/use-transform", "api/use-spring", "api/use-velocity", "api/use-scroll"]
+          },
+          {
+            "group": "Animation",
+            "pages": ["api/animate", "api/animation-controls", "api/use-animation"]
+          },
+          {
+            "group": "Gestures",
+            "pages": ["api/drag-controls", "api/gestures"]
+          },
+          {
+            "group": "Utilities",
+            "pages": ["api/utilities"]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Declarative animation API with Motion components",
+    "Gesture support for drag, tap, hover, and pan interactions",
+    "Motion values for reactive, performance-optimized animations",
+    "AnimatePresence for mount/unmount animations",
+    "Shared layout animations and transitions",
+    "Spring physics and keyframe animations",
+    "Viewport and element scroll animations",
+    "TypeScript support with full type definitions"
+  ],
+  "publicApiSurface": [
+    "Motion / motion - Main animation component factory",
+    "M / m - Minimal animation component",
+    "AnimatePresence - Mount/unmount animation wrapper",
+    "AnimateSharedLayout - Shared layout animation provider",
+    "MotionConfig - Configuration provider",
+    "LazyMotion - Lazy-load animation features",
+    "motionValue() - Create motion value",
+    "useMotionValue() - Motion value hook",
+    "useTransform() - Transform motion values",
+    "useSpring() - Spring animation hook",
+    "useVelocity() - Track value velocity",
+    "useElementScroll() - Element scroll values",
+    "useViewportScroll() - Viewport scroll values",
+    "useMotionTemplate() - Template string motion values",
+    "animate() - Imperative animation function",
+    "animationControls() - Create animation controls",
+    "useAnimation() - Animation controls hook",
+    "useDragControls() - Drag controls hook",
+    "usePresence() - Presence detection hook",
+    "useIsPresent() - Check if component is present",
+    "useReducedMotion() - Detect reduced motion preference",
+    "useCycle() - Cycle through values",
+    "transform() - Value transformation utility",
+    "MotionValue - Motion value class"
+  ]
+}
