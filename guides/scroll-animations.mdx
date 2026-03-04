@@ -1,0 +1,298 @@
+---
+title: Scroll animations
+description: Create scroll-linked animations with useViewportScroll and useElementScroll
+---
+
+Motion Start provides hooks to create animations that respond to scroll position. You can track viewport scroll or individual element scroll and link these values to animations.
+
+## Viewport scroll tracking
+
+The `useViewportScroll` hook returns `MotionValue`s that update as the page scrolls:
+
+```svelte
+<script>
+  import { useViewportScroll, MotionDiv } from 'motion-start';
+  
+  const { scrollY, scrollYProgress } = useViewportScroll();
+</script>
+
+<MotionDiv
+  style="
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(to right, #0088ff, #00ff88);
+    transform-origin: 0%;
+  "
+  style:scaleX={scrollYProgress}
+/>
+
+<div style="height: 200vh; padding: 20px;">
+  <h1>Scroll down to see the progress bar</h1>
+  <p>The bar at the top tracks scroll progress from 0 to 1</p>
+</div>
+```
+
+<Note>
+The progress bar will fill from left to right as you scroll down the page, reaching 100% when you scroll to the bottom.
+</Note>
+
+## Scroll values
+
+`useViewportScroll` returns four `MotionValue`s:
+
+<ParamField path="scrollX" type="MotionValue<number>">
+  Horizontal scroll distance in pixels.
+</ParamField>
+
+<ParamField path="scrollY" type="MotionValue<number>">
+  Vertical scroll distance in pixels.
+</ParamField>
+
+<ParamField path="scrollXProgress" type="MotionValue<number>">
+  Horizontal scroll progress between `0` and `1`.
+</ParamField>
+
+<ParamField path="scrollYProgress" type="MotionValue<number>">
+  Vertical scroll progress between `0` and `1`.
+</ParamField>
+
+Source: [utils.ts:9
+
+## Parallax effect
+
+Create a parallax scrolling effect by transforming elements based on scroll position:
+
+```svelte
+<script>
+  import { useViewportScroll, useTransform, MotionDiv } from 'motion-start';
+  
+  const { scrollY } = useViewportScroll();
+  
+  // Move background slower than foreground
+  const yBackground = useTransform(scrollY, [0, 1000], [0, -300]);
+  const yForeground = useTransform(scrollY, [0, 1000], [0, 100]);
+</script>
+
+<div style="position: relative; height: 200vh;">
+  <MotionDiv
+    style="
+      position: fixed;
+      top: 0;
+      width: 100%;
+      height: 100vh;
+      background: url('/mountains.jpg');
+      background-size: cover;
+    "
+    style:y={yBackground}
+  />
+  
+  <MotionDiv
+    style="
+      position: relative;
+      margin-top: 50vh;
+      padding: 40px;
+      background: white;
+    "
+    style:y={yForeground}
+  >
+    <h1>Parallax Content</h1>
+    <p>This content moves at a different speed than the background</p>
+  </MotionDiv>
+</div>
+```
+
+## Element scroll tracking
+
+The `useElementScroll` hook tracks scroll within a specific element:
+
+```svelte
+<script>
+  import { useElementScroll, MotionDiv } from 'motion-start';
+  
+  let scrollContainer = $state();
+  const { scrollYProgress } = useElementScroll({ current: scrollContainer });
+</script>
+
+<div bind:this={scrollContainer} style="height: 400px; overflow-y: auto;">
+  <div style="height: 1200px; padding: 20px;">
+    <MotionDiv
+      style="
+        position: sticky;
+        top: 0;
+        height: 4px;
+        background: #0088ff;
+        transform-origin: 0%;
+      "
+      style:scaleX={scrollYProgress}
+    />
+    
+    <h2>Scrollable Content</h2>
+    <p>Scroll this container to see its progress</p>
+    {#each Array(20) as _, i}
+      <p>Item {i + 1}</p>
+    {/each}
+  </div>
+</div>
+```
+
+Source: [use-element-scroll.ts:32
+
+<Info>
+The element ref must be available before the scroll values are used. The hook waits for the element to mount before attaching scroll listeners.
+</Info>
+
+## Fade in on scroll
+
+Combine scroll tracking with `useTransform` to fade elements in as they enter the viewport:
+
+```svelte
+<script>
+  import { useViewportScroll, useTransform, MotionDiv } from 'motion-start';
+  
+  const { scrollY } = useViewportScroll();
+  
+  // Fade in between 200px and 400px scroll
+  const opacity = useTransform(scrollY, [200, 400], [0, 1]);
+  const scale = useTransform(scrollY, [200, 400], [0.8, 1]);
+</script>
+
+<div style="height: 150vh;">
+  <div style="height: 300px;"></div>
+  
+  <MotionDiv
+    style:opacity
+    style:scale
+  >
+    <h2>I fade in as you scroll</h2>
+    <p>This content becomes visible between 200-400px scroll</p>
+  </MotionDiv>
+</div>
+```
+
+## Scroll-linked color change
+
+Change colors based on scroll position:
+
+```svelte
+<script>
+  import { useViewportScroll, useTransform, MotionDiv } from 'motion-start';
+  
+  const { scrollYProgress } = useViewportScroll();
+  
+  // Interpolate between colors
+  const backgroundColor = useTransform(
+    scrollYProgress,
+    [0, 0.5, 1],
+    ['#ff0088', '#0088ff', '#00ff88']
+  );
+</script>
+
+<MotionDiv
+  style="
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -1;
+  "
+  style:backgroundColor
+/>
+
+<div style="height: 300vh; padding: 40px;">
+  <h1>Scroll to see the background change color</h1>
+</div>
+```
+
+## How scroll tracking works
+
+Under the hood, the scroll hooks create `MotionValue`s and attach event listeners:
+
+<Steps>
+  <Step title="Create motion values">
+    Four `MotionValue`s are created: `scrollX`, `scrollY`, `scrollXProgress`, and `scrollYProgress`.
+    
+    Source: [utils.ts:29
+  </Step>
+  
+  <Step title="Measure scroll offsets">
+    For viewport scroll, it measures `window.pageXOffset`, `window.pageYOffset`, and calculates maximum scroll values.
+    
+    Source: [use-viewport-scroll.ts:22
+  </Step>
+  
+  <Step title="Attach listeners">
+    Event listeners for `scroll` and `resize` events update the motion values whenever the scroll position changes.
+    
+    Source: [use-viewport-scroll.ts:42
+  </Step>
+  
+  <Step title="Calculate progress">
+    Progress values are calculated by dividing current offset by maximum offset, resulting in a value between 0 and 1.
+    
+    Source: [utils.ts:58
+  </Step>
+</Steps>
+
+## Performance considerations
+
+<Warning>
+Scroll events can fire very frequently. Motion Start uses passive event listeners to avoid blocking scroll performance.
+
+Source: [use-viewport-scroll.ts:42
+</Warning>
+
+<Accordion title="Optimize heavy animations">
+  If you're performing expensive calculations or animations based on scroll, consider throttling or using `useTransform` which is optimized for this use case.
+</Accordion>
+
+<Accordion title="CSS compatibility warning">
+  Setting `body` or `html` to `height: 100%` or similar will break the progress values because it prevents the browser from accurately measuring page length.
+  
+  Source: [use-viewport-scroll.ts:54
+</Accordion>
+
+## Sticky header with scroll
+
+Create a header that changes style based on scroll position:
+
+```svelte
+<script>
+  import { useViewportScroll, useTransform, MotionDiv } from 'motion-start';
+  
+  const { scrollY } = useViewportScroll();
+  
+  const headerBackground = useTransform(
+    scrollY,
+    [0, 100],
+    ['rgba(255, 255, 255, 0)', 'rgba(255, 255, 255, 1)']
+  );
+  
+  const headerShadow = useTransform(
+    scrollY,
+    [0, 100],
+    ['0px 0px 0px rgba(0,0,0,0)', '0px 2px 8px rgba(0,0,0,0.1)']
+  );
+</script>
+
+<MotionDiv
+  style="
+    position: sticky;
+    top: 0;
+    padding: 20px;
+    z-index: 100;
+  "
+  style:backgroundColor={headerBackground}
+  style:boxShadow={headerShadow}
+>
+  <h1>Sticky Header</h1>
+  <nav>Navigation items here</nav>
+</MotionDiv>
+
+<div style="height: 200vh; padding: 20px;">
+  <p>Scroll down to see the header gain a background and shadow</p>
+</div>
+```

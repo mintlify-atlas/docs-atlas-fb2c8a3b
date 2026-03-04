@@ -1,0 +1,355 @@
+---
+title: Gesture handlers
+description: Event handlers and types for gesture interactions in Motion Start
+---
+
+Motion Start provides a comprehensive set of gesture event handlers that you can use to respond to user interactions.
+
+## Tap handlers
+
+Handle tap/click gestures on motion components.
+
+### TapHandlers
+
+```typescript
+interface TapHandlers {
+  onTap?(event: MouseEvent | TouchEvent | PointerEvent, info: TapInfo): void
+  onTapStart?(event: MouseEvent | TouchEvent | PointerEvent, info: TapInfo): void
+  onTapCancel?(event: MouseEvent | TouchEvent | PointerEvent, info: TapInfo): void
+  whileTap?: VariantLabels | TargetAndTransition
+}
+```
+
+#### onTap
+
+Callback when the tap gesture successfully ends on this element.
+
+<ParamField path="event" type="MouseEvent | TouchEvent | PointerEvent">
+  The originating pointer event.
+</ParamField>
+
+<ParamField path="info" type="TapInfo">
+  Information about the tap gesture, including the tap position.
+</ParamField>
+
+**Example:**
+
+```tsx
+function handleTap(event, info) {
+  console.log(info.point.x, info.point.y)
+}
+
+<MotionDiv onTap={handleTap} />
+```
+
+#### onTapStart
+
+Callback when the tap gesture starts on this element.
+
+<ParamField path="event" type="MouseEvent | TouchEvent | PointerEvent">
+  The originating pointer event.
+</ParamField>
+
+<ParamField path="info" type="TapInfo">
+  Information about the tap gesture.
+</ParamField>
+
+**Example:**
+
+```tsx
+<MotionDiv onTapStart={(event, info) => console.log('Tap started')} />
+```
+
+#### onTapCancel
+
+Callback when the tap gesture ends outside this element.
+
+<ParamField path="event" type="MouseEvent | TouchEvent | PointerEvent">
+  The originating pointer event.
+</ParamField>
+
+<ParamField path="info" type="TapInfo">
+  Information about the tap gesture.
+</ParamField>
+
+**Example:**
+
+```tsx
+<MotionDiv onTapCancel={(event, info) => console.log('Tap cancelled')} />
+```
+
+#### whileTap
+
+Properties or variant label to animate to while the component is pressed.
+
+**Example:**
+
+```tsx
+<MotionDiv whileTap={{ scale: 0.8 }} />
+```
+
+### TapInfo
+
+Contains information about the tap gesture such as its location.
+
+```typescript
+interface TapInfo {
+  point: Point2D
+}
+```
+
+<ResponseField name="point" type="Point2D">
+  Contains `x` and `y` values for the tap gesture relative to the device or page.
+  
+  ```typescript
+  interface Point2D {
+    x: number
+    y: number
+  }
+  ```
+</ResponseField>
+
+## Pan handlers
+
+Handle pan/drag gestures on motion components.
+
+### PanHandlers
+
+```typescript
+interface PanHandlers {
+  onPan?(event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo): void
+  onPanStart?(event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo): void
+  onPanEnd?(event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo): void
+  onPanSessionStart?(event: MouseEvent | TouchEvent | PointerEvent, info: EventInfo): void
+}
+```
+
+<Note>
+For pan gestures to work correctly with touch input, the element needs touch scrolling to be disabled on either x/y or both axis with the [touch-action](https://developer.mozilla.org/en-US/docs/Web/CSS/touch-action) CSS rule.
+</Note>
+
+#### onPan
+
+Callback function that fires when the pan gesture is recognized on this element.
+
+<ParamField path="event" type="MouseEvent | TouchEvent | PointerEvent">
+  The originating pointer event.
+</ParamField>
+
+<ParamField path="info" type="PanInfo">
+  Information about the pan gesture including point, delta, offset, and velocity.
+</ParamField>
+
+**Example:**
+
+```tsx
+function handlePan(event, info) {
+  console.log(info.point.x, info.point.y)
+}
+
+<MotionDiv onPan={handlePan} />
+```
+
+#### onPanStart
+
+Callback function that fires when the pan gesture begins on this element.
+
+<ParamField path="event" type="MouseEvent | TouchEvent | PointerEvent">
+  The originating pointer event.
+</ParamField>
+
+<ParamField path="info" type="PanInfo">
+  Information about the pan gesture.
+</ParamField>
+
+**Example:**
+
+```tsx
+<MotionDiv onPanStart={(event, info) => console.log('Pan started')} />
+```
+
+#### onPanEnd
+
+Callback function that fires when the pan gesture ends on this element.
+
+<ParamField path="event" type="MouseEvent | TouchEvent | PointerEvent">
+  The originating pointer event.
+</ParamField>
+
+<ParamField path="info" type="PanInfo">
+  Information about the pan gesture.
+</ParamField>
+
+**Example:**
+
+```tsx
+<MotionDiv onPanEnd={(event, info) => console.log('Pan ended')} />
+```
+
+#### onPanSessionStart
+
+Callback function that fires when we begin detecting a pan gesture. This is analogous to `onMouseStart` or `onTouchStart`.
+
+<ParamField path="event" type="MouseEvent | TouchEvent | PointerEvent">
+  The originating pointer event.
+</ParamField>
+
+<ParamField path="info" type="EventInfo">
+  Basic event information containing the point.
+</ParamField>
+
+### PanInfo
+
+Contains information about the current state of the pan gesture.
+
+```typescript
+interface PanInfo {
+  point: Point2D
+  delta: Point2D
+  offset: Point2D
+  velocity: Point2D
+}
+```
+
+<ResponseField name="point" type="Point2D">
+  Contains `x` and `y` values for the current pan position relative to the device or page.
+  
+  ```tsx
+  function onPan(event, info) {
+    console.log(info.point.x, info.point.y)
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="delta" type="Point2D">
+  Contains `x` and `y` values for the distance moved since the last event.
+  
+  ```tsx
+  function onPan(event, info) {
+    console.log(info.delta.x, info.delta.y)
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="offset" type="Point2D">
+  Contains `x` and `y` values for the distance moved from the first pan event.
+  
+  ```tsx
+  function onPan(event, info) {
+    console.log(info.offset.x, info.offset.y)
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="velocity" type="Point2D">
+  Contains `x` and `y` values for the current velocity of the pointer, in px/ms.
+  
+  ```tsx
+  function onPan(event, info) {
+    console.log(info.velocity.x, info.velocity.y)
+  }
+  ```
+</ResponseField>
+
+## Hover handlers
+
+Handle hover gestures on motion components.
+
+### HoverHandlers
+
+```typescript
+interface HoverHandlers {
+  whileHover?: VariantLabels | TargetAndTransition
+  onHoverStart?(event: MouseEvent, info: EventInfo): void
+  onHoverEnd?(event: MouseEvent, info: EventInfo): void
+}
+```
+
+#### whileHover
+
+Properties or variant label to animate to while the hover gesture is recognized.
+
+**Example:**
+
+```tsx
+<MotionDiv whileHover={{ scale: 1.2 }} />
+```
+
+#### onHoverStart
+
+Callback function that fires when pointer starts hovering over the component.
+
+<ParamField path="event" type="MouseEvent">
+  The mouse event.
+</ParamField>
+
+<ParamField path="info" type="EventInfo">
+  Event information containing the point.
+</ParamField>
+
+**Example:**
+
+```tsx
+<MotionDiv onHoverStart={() => console.log('Hover starts')} />
+```
+
+#### onHoverEnd
+
+Callback function that fires when pointer stops hovering over the component.
+
+<ParamField path="event" type="MouseEvent">
+  The mouse event.
+</ParamField>
+
+<ParamField path="info" type="EventInfo">
+  Event information containing the point.
+</ParamField>
+
+**Example:**
+
+```tsx
+<MotionDiv onHoverEnd={() => console.log('Hover ends')} />
+```
+
+## Focus handlers
+
+Handle focus gestures on motion components.
+
+### FocusHandlers
+
+```typescript
+interface FocusHandlers {
+  whileFocus?: VariantLabels | TargetAndTransition
+}
+```
+
+#### whileFocus
+
+Properties or variant label to animate to while the focus gesture is recognized.
+
+**Example:**
+
+```tsx
+<motion.input whileFocus={{ scale: 1.2 }} />
+```
+
+## EventInfo
+
+Basic event information provided to certain gesture handlers.
+
+```typescript
+interface EventInfo {
+  point: Point2D
+}
+```
+
+<ResponseField name="point" type="Point2D">
+  Contains `x` and `y` values for the event position relative to the device or page.
+  
+  ```typescript
+  interface Point2D {
+    x: number
+    y: number
+  }
+  ```
+</ResponseField>

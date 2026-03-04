@@ -1,0 +1,119 @@
+---
+title: Drag controls
+description: Control drag gestures programmatically with useDragControls
+---
+
+## useDragControls
+
+Creates a `DragControls` instance that can manually trigger drag gestures on `drag`-enabled motion components.
+
+Usually, dragging is initiated by pressing down on a motion component with a `drag` prop and moving it. For some use cases, such as clicking at an arbitrary point on a video scrubber, you might want to initiate dragging from a different component than the draggable one.
+
+```tsx
+import { useDragControls, MotionDiv } from 'motion-start'
+
+const dragControls = useDragControls()
+
+function startDrag(event) {
+  dragControls.start(event, { snapToCursor: true })
+}
+
+<div onPointerDown={startDrag} />
+<MotionDiv drag="x" dragControls={dragControls} />
+```
+
+### Type signature
+
+```typescript
+function useDragControls(): DragControls
+```
+
+### Returns
+
+<ResponseField name="dragControls" type="DragControls">
+  A `DragControls` instance with methods to control drag gestures.
+</ResponseField>
+
+## DragControls
+
+A class that provides methods to control drag gestures on motion components.
+
+### Methods
+
+#### start
+
+Starts a drag gesture on every motion component that has this set of drag controls passed into it via the `dragControls` prop.
+
+```typescript
+start(
+  event: PointerEvent | { nativeEvent: PointerEvent },
+  options?: DragControlOptions
+): void
+```
+
+<ParamField path="event" type="PointerEvent | { nativeEvent: PointerEvent }" required>
+  The pointer event that initiates the drag. Can be a native `PointerEvent` or an object containing a `nativeEvent` property (for Svelte event handlers).
+</ParamField>
+
+<ParamField path="options" type="DragControlOptions">
+  Optional configuration for the drag gesture.
+  
+  <ParamField path="options.snapToCursor" type="boolean">
+    When `true`, the dragging element will snap to the cursor position immediately.
+  </ParamField>
+</ParamField>
+
+**Example:**
+
+```tsx
+const dragControls = useDragControls()
+
+function onPointerDown(event) {
+  dragControls.start(event, { snapToCursor: true })
+}
+
+<div onPointerDown={onPointerDown} />
+<MotionDiv drag dragControls={dragControls} />
+```
+
+#### updateConstraints
+
+Updates the drag constraints for all controlled components. Useful when constraints need to be recalculated, such as after a layout change.
+
+```typescript
+updateConstraints(flush?: boolean): void
+```
+
+<ParamField path="flush" type="boolean">
+  Whether to flush the constraint updates immediately.
+</ParamField>
+
+## Usage example
+
+Here's a complete example showing how to use drag controls to create a custom drag handle:
+
+```svelte
+<script>
+  import { useDragControls, MotionDiv } from 'motion-start'
+  
+  const dragControls = useDragControls()
+  
+  function handlePointerDown(event) {
+    dragControls.start(event)
+  }
+</script>
+
+<div class="container">
+  <button onPointerDown={handlePointerDown}>
+    Drag Handle
+  </button>
+  
+  <MotionDiv
+    drag
+    dragControls={dragControls}
+    style="width: 200px; height: 200px; background: blue;"
+  />
+</div>
+```
+
+In this example, the drag gesture is initiated from the button rather than the draggable element itself. This is useful when you want a specific area to act as a drag handle.

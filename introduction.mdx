@@ -1,0 +1,97 @@
+---
+title: Introduction
+description: Motion Start is a Svelte animation library inspired by Framer Motion, bringing powerful animations and gestures to your Svelte applications.
+---
+
+## What is Motion Start?
+
+Motion Start is a production-ready animation library for Svelte 5, inspired by the popular React library Framer Motion. It provides a simple yet powerful API for creating fluid animations, gesture-based interactions, and complex motion sequences in your Svelte applications.
+
+Built on top of proven animation primitives from Popmotion and Framesync, Motion Start brings the best of Framer Motion's declarative animation API to the Svelte ecosystem.
+
+## Key features
+
+Motion Start provides a comprehensive set of animation capabilities:
+
+<CardGroup cols={2}>
+  <Card title="Declarative animations" icon="wand-magic-sparkles">
+    Animate elements with simple props like `animate`, `initial`, and `exit`
+  </Card>
+  <Card title="Gesture recognition" icon="hand-pointer">
+    Built-in support for hover, tap, pan, and drag gestures with `whileHover`, `whileTap`, and `whileDrag`
+  </Card>
+  <Card title="Spring physics" icon="wave-pulse">
+    Natural motion with configurable spring animations using physics-based parameters
+  </Card>
+  <Card title="Motion values" icon="chart-line">
+    Track and transform animated values with `useMotionValue`, `useTransform`, and `useSpring`
+  </Card>
+  <Card title="Scroll animations" icon="arrows-up-down">
+    Create scroll-linked animations with `useViewportScroll` and `useElementScroll`
+  </Card>
+  <Card title="Layout animations" icon="grid-2">
+    Automatically animate layout changes with `AnimateSharedLayout`
+  </Card>
+  <Card title="AnimatePresence" icon="eye">
+    Animate components when they're removed from the DOM
+  </Card>
+  <Card title="TypeScript support" icon="code">
+    Full TypeScript support with complete type definitions
+  </Card>
+</CardGroup>
+
+## Simple example
+
+Here's a basic example showing how to create an animated button with hover effects:
+
+```svelte
+<script>
+  import { Motion } from "motion-start";
+</script>
+
+<Motion.div
+  whileHover={{
+    scale: 0.8,
+    rotate: 45,
+  }}
+  class="box"
+>
+  Hover me
+</Motion.div>
+```
+
+This creates an interactive element that scales and rotates when you hover over it, with smooth animations handled automatically.
+
+## Spring animations
+
+Motion Start uses spring physics for natural-feeling animations:
+
+```svelte
+<script>
+  import { Motion } from "motion-start";
+</script>
+
+<Motion.div
+  animate={{
+    rotate: 180,
+  }}
+  transition={{
+    type: "spring",
+    damping: 10,
+    mass: 0.75,
+    stiffness: 100,
+  }}
+  class="box"
+/>
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get your first animation running in minutes
+  </Card>
+  <Card title="Installation" icon="download" href="/installation">
+    Learn how to install Motion Start in your project
+  </Card>
+</CardGroup>

@@ -1,0 +1,311 @@
+---
+title: Reduced motion
+description: Respect user accessibility preferences with useReducedMotion
+---
+
+## Overview
+
+The `useReducedMotion` hook allows you to detect when users have enabled the "Reduce Motion" accessibility setting on their device. This is crucial for creating inclusive experiences that respect user preferences and avoid triggering motion sensitivity issues.
+
+## Basic usage
+
+```svelte
+<script>
+import { Motion, useReducedMotion } from 'motion-start'
+
+const shouldReduceMotion = useReducedMotion()
+</script>
+
+<Motion.div
+  animate={{
+    opacity: $shouldReduceMotion ? 1 : [0, 1, 0],
+    transition: { duration: 2 }
+  }}
+>
+  Content
+</Motion.div>
+```
+
+<Info>
+`useReducedMotion` returns a Svelte store, so use the `$` prefix to access its value reactively.
+</Info>
+
+## Conditional animations
+
+You can completely disable animations when reduced motion is preferred:
+
+```svelte
+<script>
+import { Motion, useReducedMotion } from 'motion-start'
+
+const shouldReduceMotion = useReducedMotion()
+</script>
+
+<Motion.div
+  animate={$shouldReduceMotion ? {} : {
+    x: 100,
+    rotate: 360,
+    transition: { duration: 1 }
+  }}
+>
+  Animated content
+</Motion.div>
+```
+
+## Replacing motion types
+
+Instead of removing animations entirely, you can replace motion-sickness inducing animations with safer alternatives:
+
+```svelte
+<script>
+import { Motion, useReducedMotion } from 'motion-start'
+
+const shouldReduceMotion = useReducedMotion()
+
+let isOpen = $state(false)
+
+$effect(() => {
+  const closedX = $shouldReduceMotion ? 0 : -100
+})
+</script>
+
+<Motion.div
+  animate={{
+    opacity: isOpen ? 1 : 0,
+    x: isOpen ? 0 : ($shouldReduceMotion ? 0 : -100)
+  }}
+>
+  Sidebar content
+</Motion.div>
+```
+
+<Tip>
+When reduced motion is active, prefer `opacity` and `scale` transforms over `x`, `y`, or `rotate` which can be more disorienting.
+</Tip>
+
+## Real-world example: Sidebar
+
+Here's a complete example from the Motion Start documentation:
+
+```svelte
+<script>
+import { Motion, useReducedMotion } from 'motion-start'
+
+let isOpen = $state(false)
+const shouldReduceMotion = useReducedMotion()
+
+const closedX = $derived($shouldReduceMotion ? 0 : "-100%")
+</script>
+
+<Motion.aside
+  class="fixed left-0 top-0 h-full w-64 bg-white shadow-lg"
+  animate={{
+    opacity: isOpen ? 1 : 0,
+    x: isOpen ? 0 : closedX
+  }}
+>
+  <!-- Sidebar content -->
+</Motion.aside>
+```
+
+When reduced motion is enabled:
+- The sidebar fades in/out using `opacity`
+- The horizontal slide animation is disabled
+
+When reduced motion is disabled:
+- The sidebar both fades and slides
+- Full animation provides richer visual feedback
+
+## Disabling autoplay
+
+You can use reduced motion to control background videos or other automatically playing content:
+
+```svelte
+<script>
+import { useReducedMotion } from 'motion-start'
+import { onMount } from 'svelte'
+
+const shouldReduceMotion = useReducedMotion()
+let videoElement
+
+$effect(() => {
+  if ($shouldReduceMotion && videoElement) {
+    videoElement.pause()
+  }
+})
+</script>
+
+<video bind:this={videoElement} autoplay={!$shouldReduceMotion} muted loop>
+  <source src="background.mp4" type="video/mp4" />
+</video>
+```
+
+## Reduced parallax effects
+
+Parallax scrolling effects can be particularly problematic for users with motion sensitivity:
+
+```svelte
+<script>
+import { Motion, useReducedMotion, useViewportScroll } from 'motion-start'
+
+const shouldReduceMotion = useReducedMotion()
+const { scrollY } = useViewportScroll()
+
+const parallaxY = $derived($shouldReduceMotion ? 0 : $scrollY * 0.5)
+</script>
+
+<Motion.div
+  style={{ y: parallaxY }}
+>
+  Background layer
+</Motion.div>
+```
+
+## How it works
+
+The `useReducedMotion` hook uses the `prefers-reduced-motion` media query to detect user preferences:
+
+```typescript
+// From utils/use-reduced-motion.ts:16-32
+function initPrefersReducedMotion() {
+  prefersReducedMotion = motionValue(null);
+
+  if (typeof window === 'undefined') return;
+
+  if (window.matchMedia) {
+    const motionMediaQuery = window.matchMedia('(prefers-reduced-motion)');
+
+    const setReducedMotionPreferences = () => 
+      prefersReducedMotion.set(motionMediaQuery.matches);
+
+    motionMediaQuery.addListener(setReducedMotionPreferences);
+
+    setReducedMotionPreferences();
+  } else {
+    prefersReducedMotion.set(false);
+  }
+}
+```
+
+The hook:
+1. Creates a motion value to store the preference
+2. Checks if the browser supports `matchMedia`
+3. Listens for changes to the `prefers-reduced-motion` media query
+4. Updates reactively when the user changes their system preferences
+
+<Info>
+The hook returns `null` during server-side rendering and `false` in browsers that don't support the media query.
+</Info>
+
+## Server-side rendering
+
+During SSR, `useReducedMotion` returns `null`:
+
+```svelte
+<script>
+import { Motion, useReducedMotion } from 'motion-start'
+
+const shouldReduceMotion = useReducedMotion()
+
+// Handle null case during SSR
+const animate = $derived(
+  $shouldReduceMotion === null || $shouldReduceMotion
+    ? { opacity: 1 } // Safe default
+    : { opacity: 1, x: 100, rotate: 360 } // Full animation
+)
+</script>
+
+<Motion.div {animate}>
+  Content
+</Motion.div>
+```
+
+## Best practices
+
+<Warning>
+**Always respect the reduced motion preference** - Users enable this setting for medical or comfort reasons. Never ignore it or make it difficult to use your site with reduced motion enabled.
+</Warning>
+
+<Accordion title="What animations should I disable?">
+Prioritize disabling:
+- Large-scale movements (sliding, parallax)
+- Spinning or rotating animations
+- Zoom effects
+- Complex path animations
+- Auto-playing videos or GIFs
+
+Safe alternatives:
+- Opacity fades
+- Small-scale changes (< 1.1)
+- Color transitions
+- Static images instead of videos
+</Accordion>
+
+<Accordion title="Should I remove all animations?">
+Not necessarily. Many users with reduced motion preferences still benefit from subtle animations that provide feedback or improve usability. Focus on removing motion-sickness-inducing animations while keeping simple, purposeful transitions.
+</Accordion>
+
+<Accordion title="How can I test reduced motion?">
+You can test reduced motion by:
+- **macOS**: System Preferences → Accessibility → Display → Reduce motion
+- **Windows**: Settings → Ease of Access → Display → Show animations
+- **Browser DevTools**: Most browsers allow you to emulate this media query in their developer tools
+</Accordion>
+
+## Accessibility guidelines
+
+Following WCAG (Web Content Accessibility Guidelines) 2.1:
+
+- **Success Criterion 2.3.3 (Level AAA)**: Motion triggered by interaction can be disabled
+- **Success Criterion 2.2.2 (Level A)**: Auto-updating content can be paused, stopped, or hidden
+
+Using `useReducedMotion` helps you meet these guidelines and create more accessible experiences.
+
+## Complete example
+
+Here's a full example showing how to build an accessible animated component:
+
+```svelte
+<script>
+import { Motion, useReducedMotion } from 'motion-start'
+
+let isVisible = $state(false)
+const shouldReduceMotion = useReducedMotion()
+
+const variants = {
+  hidden: {
+    opacity: 0,
+    y: $shouldReduceMotion ? 0 : 50
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: $shouldReduceMotion ? 0.2 : 0.6,
+      ease: 'easeOut'
+    }
+  }
+}
+
+function toggle() {
+  isVisible = !isVisible
+}
+</script>
+
+<Motion.div
+  variants={variants}
+  animate={isVisible ? 'visible' : 'hidden'}
+>
+  Accessible animated content
+</Motion.div>
+
+<button onclick={toggle}>
+  {isVisible ? 'Hide' : 'Show'}
+</button>
+```
+
+This component:
+- Reduces animation distance when reduced motion is enabled
+- Shortens animation duration for quicker feedback
+- Maintains opacity transitions for all users
+- Provides the same functionality regardless of motion preference

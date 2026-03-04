@@ -1,0 +1,274 @@
+---
+title: MotionConfig
+description: Set configuration options for all child motion components
+---
+
+`MotionConfig` is used to set configuration options for all children `motion` components. This is useful for setting default transitions or other configuration that should apply to an entire subtree.
+
+## Import
+
+```javascript
+import { MotionConfig } from 'motion-start'
+```
+
+## Usage
+
+Wrap your `motion` components with `MotionConfig` to apply configuration to all descendants:
+
+```svelte
+<script>
+  import { motion, MotionConfig } from 'motion-start'
+  
+  const spring = {
+    type: "spring",
+    damping: 20,
+    stiffness: 300
+  }
+</script>
+
+<MotionConfig transition={spring}>
+  <motion.div animate={{ x: 100 }} />
+  <motion.div animate={{ y: 100 }} />
+  <motion.div animate={{ scale: 1.5 }} />
+</MotionConfig>
+```
+
+## Props
+
+<ParamField path="transition" type="Transition">
+  Defines a new default transition for the entire tree.
+
+  All `motion` components within the `MotionConfig` tree will use this transition unless they specify their own.
+
+  ```svelte
+  <script>
+    const transition = {
+      type: "spring",
+      stiffness: 260,
+      damping: 20
+    }
+  </script>
+
+  <MotionConfig transition={transition}>
+    <!-- All motion components will use the spring transition -->
+    <motion.div animate={{ opacity: 1 }} />
+  </MotionConfig>
+  ```
+</ParamField>
+
+<ParamField path="transformPagePoint" type="(point: Point2D) => Point2D">
+  A function that can map a page point between spaces. Used internally by Framer to support dragging and layout animations within scaled space.
+
+  <Info>
+    This is typically an advanced/internal prop. Most applications won't need to use this.
+  </Info>
+
+  ```typescript
+  type TransformPoint2D = (point: Point2D) => Point2D
+
+  interface Point2D {
+    x: number;
+    y: number;
+  }
+  ```
+</ParamField>
+
+<ParamField path="isStatic" type="boolean" default="false">
+  Determines whether this is a static context (like the Framer canvas). If so, it'll disable all dynamic functionality.
+
+  <Warning>
+    Don't allow `isStatic` to change between renders as it affects how many hooks motion components fire.
+  </Warning>
+
+  <Info>
+    This is an internal prop used by Framer and typically shouldn't be used in application code.
+  </Info>
+</ParamField>
+
+## Types
+
+### MotionConfigProps
+
+```typescript
+type MotionConfigProps = Partial<MotionConfigContextObject>
+```
+
+### MotionConfigContextObject
+
+```typescript
+interface MotionConfigContextObject {
+  /**
+   * A function that can map a page point between spaces.
+   */
+  transformPagePoint: TransformPoint2D;
+  
+  /**
+   * Determines whether this is a static context ie the Framer canvas.
+   * If so, it'll disable all dynamic functionality.
+   */
+  isStatic: boolean;
+  
+  /**
+   * Defines a new default transition for the entire tree.
+   */
+  transition?: Transition;
+}
+```
+
+### TransformPoint2D
+
+```typescript
+type TransformPoint2D = (point: Point2D) => Point2D
+
+interface Point2D {
+  x: number;
+  y: number;
+}
+```
+
+## Examples
+
+### Global spring transition
+
+Set a spring transition for all animations in your app:
+
+```svelte
+<script>
+  import { motion, MotionConfig } from 'motion-start'
+  
+  const globalTransition = {
+    type: "spring",
+    damping: 25,
+    stiffness: 300
+  }
+</script>
+
+<MotionConfig transition={globalTransition}>
+  <div class="app">
+    <motion.header animate={{ y: 0 }} initial={{ y: -100 }} />
+    <motion.main animate={{ opacity: 1 }} initial={{ opacity: 0 }} />
+    <motion.footer animate={{ y: 0 }} initial={{ y: 100 }} />
+  </div>
+</MotionConfig>
+```
+
+### Nested configuration
+
+You can nest `MotionConfig` components. Inner configurations will inherit and override outer ones:
+
+```svelte
+<script>
+  import { motion, MotionConfig } from 'motion-start'
+  
+  const defaultTransition = {
+    duration: 0.3,
+    ease: "easeInOut"
+  }
+  
+  const slowTransition = {
+    duration: 1,
+    ease: "easeInOut"
+  }
+</script>
+
+<MotionConfig transition={defaultTransition}>
+  <!-- Fast animations -->
+  <motion.div animate={{ x: 100 }} />
+  
+  <MotionConfig transition={slowTransition}>
+    <!-- Slow animations -->
+    <motion.div animate={{ x: 100 }} />
+  </MotionConfig>
+  
+  <!-- Back to fast animations -->
+  <motion.div animate={{ x: 100 }} />
+</MotionConfig>
+```
+
+### Different transition types per section
+
+```svelte
+<script>
+  import { motion, MotionConfig } from 'motion-start'
+  
+  const heroTransition = {
+    type: "spring",
+    bounce: 0.4
+  }
+  
+  const contentTransition = {
+    type: "tween",
+    duration: 0.4,
+    ease: "easeOut"
+  }
+</script>
+
+<div class="page">
+  <MotionConfig transition={heroTransition}>
+    <section class="hero">
+      <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        Welcome
+      </motion.h1>
+      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        Bouncy animations
+      </motion.p>
+    </section>
+  </MotionConfig>
+  
+  <MotionConfig transition={contentTransition}>
+    <section class="content">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        Smooth fade-in
+      </motion.div>
+    </section>
+  </MotionConfig>
+</div>
+```
+
+## How it works
+
+`MotionConfig` uses Svelte's context API to provide configuration to all descendant `motion` components. When a `motion` component looks up its configuration, it will:
+
+1. Check if it has a local `transition` prop (highest priority)
+2. Check for configuration from the nearest `MotionConfig` ancestor
+3. Fall back to default transitions
+
+This allows you to set sensible defaults while still maintaining the ability to override on a per-component basis.
+
+<Note>
+  Configuration is inherited down the component tree, so deeply nested `motion` components will receive the configuration from their nearest `MotionConfig` ancestor.
+</Note>
+
+## Performance considerations
+
+Creating a new config context object will re-render every `motion` component within the `MotionConfig` tree. For this reason:
+
+- Define transitions outside of your component if they don't change
+- Use stable references for `transition` objects
+- Avoid changing `isStatic` between renders
+
+```svelte
+<script>
+  // Good: defined outside component, stable reference
+  const transition = { duration: 0.3 }
+</script>
+
+<MotionConfig transition={transition}>
+  <!-- children -->
+</MotionConfig>
+```
+
+```svelte
+<script>
+  // Bad: new object on every render
+</script>
+
+<MotionConfig transition={{ duration: 0.3 }}>
+  <!-- children -->
+</MotionConfig>
+```
+
+## Related
+
+- [motion](/api/motion) - Create animated components that respect MotionConfig
+- [Transitions](/guides/transitions) - Learn about transition options

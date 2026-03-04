@@ -1,0 +1,298 @@
+---
+title: Animation controls
+description: Imperatively control animations with animationControls and useAnimation
+---
+
+## Overview
+
+Animation controls provide an imperative API for starting, stopping, and sequencing animations. Instead of declaring animations in component props, you can programmatically trigger them in response to events or application state.
+
+## Creating animation controls
+
+Use `useAnimation` to create animation controls:
+
+```svelte
+<script>
+import { Motion, useAnimation } from 'motion-start'
+
+const controls = useAnimation()
+</script>
+
+<Motion.div animate={controls} />
+```
+
+The controls object is then passed to the `animate` prop of motion components.
+
+## Starting animations
+
+Call `controls.start()` to begin an animation:
+
+```svelte
+<script>
+import { Motion, useAnimation } from 'motion-start'
+
+const controls = useAnimation()
+
+function handleClick() {
+  controls.start({
+    x: 100,
+    transition: { duration: 0.5 }
+  })
+}
+</script>
+
+<Motion.div animate={controls} />
+<button onclick={handleClick}>Animate</button>
+```
+
+### Animating to variants
+
+You can also animate to variant labels:
+
+```svelte
+<script>
+import { Motion, useAnimation } from 'motion-start'
+
+const controls = useAnimation()
+
+const variants = {
+  hidden: { opacity: 0, y: -20 },
+  visible: { opacity: 1, y: 0 }
+}
+
+function show() {
+  controls.start('visible')
+}
+</script>
+
+<Motion.div 
+  animate={controls}
+  variants={variants}
+  initial="hidden"
+/>
+<button onclick={show}>Show</button>
+```
+
+## Controlling multiple components
+
+A single animation controls instance can control multiple components simultaneously:
+
+```svelte
+<script>
+import { Motion, useAnimation } from 'motion-start'
+
+const controls = useAnimation()
+
+function animateAll() {
+  controls.start({ scale: 1.2 })
+}
+</script>
+
+<Motion.div animate={controls} />
+<Motion.div animate={controls} />
+<Motion.div animate={controls} />
+<button onclick={animateAll}>Animate All</button>
+```
+
+All components sharing the same controls will animate together.
+
+## Setting values instantly
+
+Use `controls.set()` to instantly set values without animation:
+
+```svelte
+<script>
+import { Motion, useAnimation } from 'motion-start'
+
+const controls = useAnimation()
+
+function reset() {
+  controls.set({ x: 0, opacity: 1 })
+}
+</script>
+
+<Motion.div animate={controls} />
+<button onclick={reset}>Reset</button>
+```
+
+## Stopping animations
+
+Stop all running animations with `controls.stop()`:
+
+```svelte
+<script>
+import { Motion, useAnimation } from 'motion-start'
+
+const controls = useAnimation()
+
+function startAnimation() {
+  controls.start({
+    x: 100,
+    transition: { duration: 2 }
+  })
+}
+
+function stopAnimation() {
+  controls.stop()
+}
+</script>
+
+<Motion.div animate={controls} />
+<button onclick={startAnimation}>Start</button>
+<button onclick={stopAnimation}>Stop</button>
+```
+
+## Sequencing animations
+
+Since `controls.start()` returns a promise, you can sequence animations:
+
+```svelte
+<script>
+import { Motion, useAnimation } from 'motion-start'
+
+const controls = useAnimation()
+
+async function sequence() {
+  await controls.start({ x: 100 })
+  await controls.start({ y: 100 })
+  await controls.start({ x: 0, y: 0 })
+}
+</script>
+
+<Motion.div animate={controls} />
+<button onclick={sequence}>Run Sequence</button>
+```
+
+<Info>
+Each animation waits for the previous one to complete before starting.
+</Info>
+
+## Dynamic animation targets
+
+You can dynamically compute animation targets:
+
+```svelte
+<script>
+import { Motion, useAnimation } from 'motion-start'
+
+const controls = useAnimation()
+
+function animateToRandomPosition() {
+  controls.start({
+    x: Math.random() * 200,
+    y: Math.random() * 200
+  })
+}
+</script>
+
+<Motion.div animate={controls} />
+<button onclick={animateToRandomPosition}>Random Position</button>
+```
+
+## Override transitions
+
+You can override the transition for variant animations:
+
+```svelte
+<script>
+import { Motion, useAnimation } from 'motion-start'
+
+const controls = useAnimation()
+
+const variants = {
+  visible: {
+    opacity: 1,
+    transition: { duration: 1 }
+  }
+}
+
+function quickShow() {
+  // Override the variant's transition
+  controls.start('visible', { duration: 0.2 })
+}
+</script>
+
+<Motion.div 
+  animate={controls}
+  variants={variants}
+/>
+<button onclick={quickShow}>Quick Show</button>
+```
+
+## Using the component version
+
+Motion Start also provides a `UseAnimation` component that exposes controls via slots:
+
+```svelte
+<script>
+import { Motion, UseAnimation } from 'motion-start'
+</script>
+
+<UseAnimation let:controls>
+  <Motion.div animate={controls} />
+  <button onclick={() => controls.start({ scale: 1.5 })}
+    >Animate</button
+  >
+</UseAnimation>
+```
+
+## Implementation details
+
+The animation controls system uses a subscription model. When you pass controls to a component's `animate` prop, that component subscribes to the controls:
+
+```typescript
+// From animation-controls.ts:35-46
+subscribe: (visualElement) => {
+  if (subscribers.size === 0) {
+    stopNotification = startStopNotifier?.();
+  }
+  subscribers.add(visualElement);
+  return () => {
+    subscribers.delete(visualElement);
+    if (subscribers.size === 0) {
+      stopNotification?.();
+    }
+  };
+}
+```
+
+When you call `controls.start()`, it triggers animations on all subscribed visual elements:
+
+```typescript
+// From animation-controls.ts:47-63
+start: (definition, transitionOverride?) => {
+  if (hasMounted) {
+    var animations: any[] = [];
+    subscribers.forEach((visualElement) => {
+      animations.push(
+        animateVisualElement(visualElement, definition, {
+          transitionOverride: transitionOverride,
+        })
+      );
+    });
+    return Promise.all(animations);
+  }
+}
+```
+
+<Warning>
+Animations started before the component mounts are queued and executed after mount. However, it's best practice to only start animations in response to user interactions or lifecycle events.
+</Warning>
+
+## Best practices
+
+<Tip>
+**Use declarative animations when possible** - Animation controls are powerful but declarative animations (using `animate` props) are often simpler and more maintainable.
+</Tip>
+
+<Accordion title="When should I use animation controls?">
+Use animation controls when:
+- You need to trigger animations from event handlers
+- You want to sequence multiple animations
+- You need to control the same animation across multiple components
+- You require imperative control over animation timing
+</Accordion>
+
+<Accordion title="Can I use both controls and declarative animations?">
+No, when you pass controls to the `animate` prop, declarative animation props like `whileHover` won't work. Choose one approach per component.
+</Accordion>

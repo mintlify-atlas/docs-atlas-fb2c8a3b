@@ -1,0 +1,228 @@
+---
+title: animationControls
+description: Create animation controls to orchestrate animations across multiple components
+---
+
+Create `AnimationControls` to manually start, stop, and synchronize animations across one or more components.
+
+## Import
+
+```typescript
+import { animationControls } from 'motion-start'
+```
+
+## Function signature
+
+```typescript
+function animationControls(
+  startStopNotifier?: () => () => void
+): AnimationControls
+```
+
+## Parameters
+
+<ParamField path="startStopNotifier" type="() => () => void">
+  Optional callback that runs when the first component subscribes and returns a cleanup function that runs when all components unsubscribe.
+</ParamField>
+
+## Return value
+
+<ResponseField name="AnimationControls" type="object">
+  An object with methods to control animations:
+  
+  <Expandable title="properties">
+    <ResponseField name="subscribe" type="(visualElement: VisualElement) => () => void">
+      Subscribes a component's animation to this controller. Returns an unsubscribe function. This is used internally by Motion Start components.
+    </ResponseField>
+    
+    <ResponseField name="start" type="(definition: ControlsAnimationDefinition, transitionOverride?: Transition) => Promise<any>">
+      Starts an animation on all linked components.
+      
+      **Parameters:**
+      - `definition`: The animation to run. Can be:
+        - A variant label: `string`
+        - Multiple variant labels: `string[]`
+        - Animation values: `TargetAndTransition`
+        - Dynamic variant resolver: `TargetResolver`
+      - `transitionOverride`: Optional transition to override variant transitions
+      
+      **Returns:** A Promise that resolves when all animations complete.
+    </ResponseField>
+    
+    <ResponseField name="set" type="(definition: ControlsAnimationDefinition) => void">
+      Instantly sets properties or a variant on all linked components without animation.
+    </ResponseField>
+    
+    <ResponseField name="stop" type="() => void">
+      Stops all animations on linked components.
+    </ResponseField>
+    
+    <ResponseField name="mount" type="() => () => void">
+      Marks the controls as mounted and processes any pending animations. Returns a cleanup function that unmounts the controls and stops all animations.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Usage
+
+While you can use `animationControls` directly, it's recommended to use the [`useAnimation`](/api/use-animation) hook in Svelte applications, which handles the mounting lifecycle automatically.
+
+### Direct usage
+
+```typescript
+import { animationControls } from 'motion-start'
+import { onMount } from 'svelte'
+
+const controls = animationControls(() => {
+  console.log('First component subscribed')
+  
+  return () => {
+    console.log('All components unsubscribed')
+  }
+})
+
+onMount(() => {
+  // Mount the controls
+  const cleanup = controls.mount()
+  
+  // Start animations
+  controls.start({
+    x: 100,
+    transition: { duration: 1 }
+  })
+  
+  return cleanup
+})
+```
+
+### With Motion components
+
+```svelte
+<script>
+import { Motion, animationControls } from 'motion-start'
+import { onMount } from 'svelte'
+
+const controls = animationControls()
+
+onMount(() => {
+  const cleanup = controls.mount()
+  
+  // Animate all linked components
+  controls.start({
+    scale: 1.5,
+    rotate: 180,
+    transition: { duration: 0.5 }
+  })
+  
+  return cleanup
+})
+</script>
+
+<Motion let:motion animate={controls}>
+  <div use:motion>First box</div>
+</Motion>
+
+<Motion let:motion animate={controls}>
+  <div use:motion>Second box</div>
+</Motion>
+```
+
+## Examples
+
+### Start animation with variants
+
+```typescript
+const controls = animationControls()
+
+// Animate to a variant
+controls.start('visible')
+
+// Animate through multiple variants
+controls.start(['visible', 'highlighted'])
+```
+
+### Start with custom transition
+
+```typescript
+controls.start(
+  { x: 100, opacity: 1 },
+  { duration: 2, ease: 'easeOut' }
+)
+```
+
+### Set values instantly
+
+```typescript
+// Set without animating
+controls.set({ opacity: 0 })
+
+// Set to a variant
+controls.set('hidden')
+```
+
+### Stop all animations
+
+```typescript
+controls.stop()
+```
+
+### Sequence animations
+
+```typescript
+async function sequence() {
+  await controls.start({ x: 100 })
+  await controls.start({ y: 100 })
+  await controls.start({ scale: 1.2 })
+}
+
+sequence()
+```
+
+## Type definitions
+
+```typescript
+export interface AnimationControls {
+  subscribe(visualElement: VisualElement): () => void
+  
+  start(
+    definition: ControlsAnimationDefinition,
+    transitionOverride?: Transition
+  ): Promise<any>
+  
+  set(definition: ControlsAnimationDefinition): void
+  
+  stop(): void
+  
+  mount(): () => void
+}
+
+export type ControlsAnimationDefinition = 
+  | string 
+  | string[] 
+  | TargetAndTransition 
+  | TargetResolver
+
+export type TargetAndTransition = TargetWithKeyframes & {
+  transition?: Transition
+  transitionEnd?: Target
+}
+
+export type TargetResolver = (
+  custom: any,
+  current: Target,
+  velocity: Target
+) => TargetAndTransition
+```
+
+## Notes
+
+- Animations started before the component mounts are queued and executed after mounting
+- The `set` method should only be called after components have mounted
+- All subscribed components will animate together when `start` is called
+- The returned Promise from `start` resolves when all component animations complete
+
+## Related APIs
+
+- [useAnimation](/api/use-animation) - Recommended hook for creating animation controls in Svelte
+- [animate](/api/animate) - Animate individual values
+- [Motion](/api/motion) - Motion component that accepts animation controls

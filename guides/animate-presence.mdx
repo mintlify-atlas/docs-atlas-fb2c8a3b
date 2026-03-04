@@ -1,0 +1,229 @@
+---
+title: Animate presence
+description: Enable exit animations with AnimatePresence to smoothly remove elements from the DOM
+---
+
+The `AnimatePresence` component enables animations when components are removed from the component tree. In Svelte, when a component is removed, it's instantly unmounted. `AnimatePresence` keeps components in the DOM until their exit animations complete.
+
+## Basic usage
+
+Wrap your conditionally-rendered components with `AnimatePresence` and define an `exit` animation on the child components:
+
+```svelte
+<script>
+  import { AnimatePresence, MotionDiv } from 'motion-start';
+  
+  let isVisible = $state(true);
+</script>
+
+<button onclick={() => isVisible = !isVisible}>
+  Toggle
+</button>
+
+<AnimatePresence show={isVisible}>
+  <MotionDiv
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+  >
+    I will fade in and out
+  </MotionDiv>
+</AnimatePresence>
+```
+
+<Note>
+The `show` prop controls whether the child component should be rendered. Set it to `true` to show the component and `false` to trigger the exit animation.
+</Note>
+
+## Animating lists
+
+For animating lists of items, use the `list` prop instead of `show`. Each item in the list must have a unique `key` property:
+
+```svelte
+<script>
+  import { AnimatePresence, MotionDiv } from 'motion-start';
+  
+  let items = $state([
+    { key: 1, text: 'Item 1' },
+    { key: 2, text: 'Item 2' },
+    { key: 3, text: 'Item 3' }
+  ]);
+  
+  function removeItem(key) {
+    items = items.filter(item => item.key !== key);
+  }
+</script>
+
+<AnimatePresence list={items}>
+  {#snippet children({ item })}
+    <MotionDiv
+      initial={{ opacity: 0, x: -100 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 100 }}
+      style="margin: 8px 0;"
+    >
+      {item.text}
+      <button onclick={() => removeItem(item.key)}>Remove</button>
+    </MotionDiv>
+  {/snippet}
+</AnimatePresence>
+```
+
+<Warning>
+Every item in the `list` array **must** have a unique `key` property. AnimatePresence uses this to track which items are entering and exiting.
+</Warning>
+
+## Exit before enter
+
+Set `exitBeforeEnter` to ensure only one component is rendered at a time. The exiting component will complete its exit animation before the entering component renders:
+
+```svelte
+<script>
+  import { AnimatePresence, MotionDiv } from 'motion-start';
+  
+  let currentItem = $state(0);
+  const items = [
+    { key: 0, color: 'red' },
+    { key: 1, color: 'blue' },
+    { key: 2, color: 'green' }
+  ];
+</script>
+
+<button onclick={() => currentItem = (currentItem + 1) % items.length}>
+  Next
+</button>
+
+<AnimatePresence list={[items[currentItem]]} exitBeforeEnter>
+  {#snippet children({ item })}
+    <MotionDiv
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      style="background: {item.color}; width: 200px; height: 200px;"
+    />
+  {/snippet}
+</AnimatePresence>
+```
+
+## Disabling initial animations
+
+By default, components present when `AnimatePresence` first mounts will animate in. To disable this, set `initial={false}`:
+
+```svelte
+<AnimatePresence show={isVisible} initial={false}>
+  <MotionDiv
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+  >
+    I won't animate on initial mount
+  </MotionDiv>
+</AnimatePresence>
+```
+
+## Custom exit animations
+
+You can pass dynamic data to exiting components using the `custom` prop. This is useful when you want to customize the exit animation based on state:
+
+```svelte
+<script>
+  import { AnimatePresence, MotionDiv } from 'motion-start';
+  
+  let direction = $state(1); // 1 for right, -1 for left
+  let isVisible = $state(true);
+</script>
+
+<AnimatePresence show={isVisible} custom={direction}>
+  <MotionDiv
+    initial={{ x: 300 * direction, opacity: 0 }}
+    animate={{ x: 0, opacity: 1 }}
+    exit={(custom) => ({
+      x: -300 * custom,
+      opacity: 0
+    })}
+  >
+    Exits in the direction based on custom value
+  </MotionDiv>
+</AnimatePresence>
+```
+
+<Info>
+The `custom` prop allows you to pass data that's available when the component is removed, even though you can't update props on an unmounting component.
+</Info>
+
+## Exit complete callback
+
+Use `onExitComplete` to run code after all exiting animations finish:
+
+```svelte
+<script>
+  import { AnimatePresence, MotionDiv } from 'motion-start';
+  
+  function handleExitComplete() {
+    console.log('All exit animations complete!');
+  }
+</script>
+
+<AnimatePresence 
+  list={items}
+  onExitComplete={handleExitComplete}
+>
+  {#snippet children({ item })}
+    <MotionDiv
+      exit={{ opacity: 0 }}
+    >
+      {item.text}
+    </MotionDiv>
+  {/snippet}
+</AnimatePresence>
+```
+
+## Using with presence hooks
+
+Inside components wrapped by `AnimatePresence`, you can use the `usePresence` hook to detect when the component is exiting:
+
+```svelte
+<script>
+  import { usePresence } from 'motion-start';
+  
+  const isPresent = usePresence();
+  
+  $effect(() => {
+    if (!$isPresent) {
+      console.log('Component is exiting!');
+    }
+  });
+</script>
+```
+
+Source: [use-presence.ts:72
+
+## Props reference
+
+<ParamField path="show" type="boolean">
+  Controls whether the child should be rendered. Only used when `list` is undefined.
+</ParamField>
+
+<ParamField path="list" type="Array<{key: any}>">
+  Array of items to render. Each item must have a unique `key` property. When provided, the `show` prop is ignored.
+</ParamField>
+
+<ParamField path="initial" type="boolean" default={true}>
+  If `false`, components present on initial render won't animate in.
+</ParamField>
+
+<ParamField path="exitBeforeEnter" type="boolean" default={false}>
+  If `true`, only one component renders at a time. The exiting component finishes its exit animation before the entering component renders.
+</ParamField>
+
+<ParamField path="custom" type="any">
+  Custom data passed to exit animations. Useful for dynamic exit animations when the component is being removed.
+</ParamField>
+
+<ParamField path="onExitComplete" type="() => void">
+  Callback that fires when all exiting components have completed their animations.
+</ParamField>
+
+<ParamField path="presenceAffectsLayout" type="boolean" default={true}>
+  Internal prop used to control whether presence affects layout calculations.
+</ParamField>

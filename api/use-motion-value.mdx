@@ -1,0 +1,136 @@
+---
+title: useMotionValue
+description: Create a MotionValue to track the state and velocity of a value.
+---
+
+`useMotionValue` creates a `MotionValue` to track the state and velocity of a value. Usually, these are created automatically. For advanced use-cases, like use with `useTransform`, you can create `MotionValue`s externally and pass them into the animated component via the `style` prop.
+
+## Import
+
+```typescript
+import { useMotionValue } from 'motion-start'
+```
+
+## Usage
+
+```svelte
+<script>
+  import { Motion, useMotionValue } from 'motion-start'
+  
+  const scale = useMotionValue(1)
+</script>
+
+<Motion let:motion style={{ scale }}>
+  <div use:motion />
+</Motion>
+```
+
+## Signature
+
+```typescript
+function useMotionValue<V>(
+  initial: V
+): MotionValue<V>
+```
+
+<ParamField path="initial" type="V" required>
+  The initial state.
+</ParamField>
+
+<ResponseField name="MotionValue" type="MotionValue<V>">
+  A `MotionValue` instance that tracks state and velocity. See [motionValue](/api/motion-value) for all available methods.
+</ResponseField>
+
+## Examples
+
+### Basic usage
+
+```svelte
+<script>
+  import { Motion, useMotionValue } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  const y = useMotionValue(0)
+  
+  function handleDrag(event) {
+    x.set(event.clientX)
+    y.set(event.clientY)
+  }
+</script>
+
+<Motion let:motion style={{ x, y }}>
+  <div use:motion on:drag={handleDrag} />
+</Motion>
+```
+
+### With transforms
+
+```svelte
+<script>
+  import { Motion, useMotionValue, useTransform } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  const opacity = useTransform(x, [-100, 0, 100], [0, 1, 0])
+</script>
+
+<Motion let:motion animate={{ x: 100 }} style={{ opacity, x }}>
+  <div use:motion />
+</Motion>
+```
+
+### Accessing values
+
+You can get and set motion values imperatively:
+
+```svelte
+<script>
+  import { useMotionValue } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  
+  function increment() {
+    x.set(x.get() + 100)
+  }
+</script>
+
+<button on:click={increment}>Increment</button>
+```
+
+### Subscribing to changes
+
+Motion values are compatible with Svelte stores:
+
+```svelte
+<script>
+  import { useMotionValue } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  
+  // Access reactive value with $
+  $: console.log($x)
+</script>
+```
+
+Or use the `onChange` method:
+
+```svelte
+<script>
+  import { onDestroy } from 'svelte'
+  import { useMotionValue } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  
+  const unsubscribe = x.onChange(latest => {
+    console.log('x changed to', latest)
+  })
+  
+  onDestroy(unsubscribe)
+</script>
+```
+
+## Related
+
+- [motionValue](/api/motion-value)
+- [useTransform](/api/use-transform)
+- [useSpring](/api/use-spring)
+- [useVelocity](/api/use-velocity)

@@ -1,0 +1,267 @@
+---
+title: useScroll
+description: Track scroll position and progress with MotionValues.
+---
+
+`useScroll` provides `MotionValue`s that track scroll position and progress. Motion Start offers two variants: `useViewportScroll` for tracking the viewport scroll, and `useElementScroll` for tracking a specific element's scroll.
+
+## Import
+
+```typescript
+import { useViewportScroll, useElementScroll } from 'motion-start'
+```
+
+## useViewportScroll
+
+Returns `MotionValue`s that update when the viewport scrolls.
+
+### Signature
+
+```typescript
+function useViewportScroll(): ScrollMotionValues
+```
+
+<ResponseField name="ScrollMotionValues" type="ScrollMotionValues">
+  An object containing four `MotionValue`s that track scroll state.
+</ResponseField>
+
+### Return value
+
+```typescript
+interface ScrollMotionValues {
+  scrollX: MotionValue<number>
+  scrollY: MotionValue<number>
+  scrollXProgress: MotionValue<number>
+  scrollYProgress: MotionValue<number>
+}
+```
+
+<ResponseField name="scrollX" type="MotionValue<number>">
+  Horizontal scroll distance in pixels.
+</ResponseField>
+
+<ResponseField name="scrollY" type="MotionValue<number>">
+  Vertical scroll distance in pixels.
+</ResponseField>
+
+<ResponseField name="scrollXProgress" type="MotionValue<number>">
+  Horizontal scroll progress between `0` and `1`.
+</ResponseField>
+
+<ResponseField name="scrollYProgress" type="MotionValue<number>">
+  Vertical scroll progress between `0` and `1`.
+</ResponseField>
+
+### Usage
+
+```svelte
+<script>
+  import { Motion, useViewportScroll } from 'motion-start'
+  
+  const { scrollYProgress } = useViewportScroll()
+</script>
+
+<Motion let:motion style={{ scaleX: scrollYProgress }}>
+  <div use:motion class="progress-bar" />
+</Motion>
+```
+
+### Examples
+
+#### Progress indicator
+
+```svelte
+<script>
+  import { Motion, useViewportScroll } from 'motion-start'
+  
+  const { scrollYProgress } = useViewportScroll()
+</script>
+
+<Motion 
+  let:motion 
+  style={{ scaleX: scrollYProgress }}
+  initial={{ scaleX: 0 }}
+>
+  <div use:motion class="progress" />
+</Motion>
+
+<style>
+  .progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: blue;
+    transform-origin: 0%;
+  }
+</style>
+```
+
+#### Parallax effect
+
+```svelte
+<script>
+  import { Motion, useViewportScroll, useTransform } from 'motion-start'
+  
+  const { scrollY } = useViewportScroll()
+  const y = useTransform(scrollY, [0, 1000], [0, -200])
+</script>
+
+<Motion let:motion style={{ y }}>
+  <div use:motion class="parallax-element" />
+</Motion>
+```
+
+#### Scroll-based opacity
+
+```svelte
+<script>
+  import { Motion, useViewportScroll, useTransform } from 'motion-start'
+  
+  const { scrollYProgress } = useViewportScroll()
+  const opacity = useTransform(scrollYProgress, [0, 0.5, 1], [1, 0.5, 0])
+</script>
+
+<Motion let:motion style={{ opacity }}>
+  <header use:motion>Fades out on scroll</header>
+</Motion>
+```
+
+## useElementScroll
+
+Returns `MotionValue`s that update when a specific element scrolls.
+
+### Signature
+
+```typescript
+function useElementScroll(
+  ref: { current: HTMLElement | null }
+): ScrollMotionValues
+```
+
+<ParamField path="ref" type="{ current: HTMLElement | null }" required>
+  A reference object containing the element to track. The object should have a `current` property that points to the DOM element.
+</ParamField>
+
+<ResponseField name="ScrollMotionValues" type="ScrollMotionValues">
+  An object containing four `MotionValue`s that track the element's scroll state.
+</ResponseField>
+
+### Usage
+
+```svelte
+<script>
+  import { useElementScroll } from 'motion-start'
+  
+  const ref = { current: null }
+  const { scrollYProgress } = useElementScroll(ref)
+  
+  $: console.log('Scroll progress:', $scrollYProgress)
+</script>
+
+<div bind:this={ref.current} class="scrollable">
+  <div class="content">Long content...</div>
+</div>
+
+<style>
+  .scrollable {
+    height: 300px;
+    overflow-y: auto;
+  }
+</style>
+```
+
+### Examples
+
+#### Scrollable container progress
+
+```svelte
+<script>
+  import { Motion, useElementScroll } from 'motion-start'
+  
+  const ref = { current: null }
+  const { scrollYProgress } = useElementScroll(ref)
+</script>
+
+<div class="container">
+  <Motion 
+    let:motion 
+    style={{ scaleX: scrollYProgress }}
+  >
+    <div use:motion class="progress-bar" />
+  </Motion>
+  
+  <div bind:this={ref.current} class="scrollable">
+    <!-- Content -->
+  </div>
+</div>
+```
+
+#### Element parallax
+
+```svelte
+<script>
+  import { Motion, useElementScroll, useTransform } from 'motion-start'
+  
+  const ref = { current: null }
+  const { scrollY } = useElementScroll(ref)
+  const y = useTransform(scrollY, [0, 500], [0, -100])
+</script>
+
+<div bind:this={ref.current} class="scrollable">
+  <Motion let:motion style={{ y }}>
+    <div use:motion>Parallax content</div>
+  </Motion>
+</div>
+```
+
+## Notes
+
+### Important warnings
+
+<Warning>
+  Setting `body` or `html` to `height: 100%` or similar will break the `Progress` values when using `useViewportScroll`, as this breaks the browser's capability to accurately measure the page length.
+</Warning>
+
+### Performance
+
+- Scroll listeners are added with the `passive: true` option for optimal performance.
+- Event listeners are automatically cleaned up when components unmount.
+- For `useViewportScroll`, listeners are shared across all instances to minimize performance impact.
+
+### Browser compatibility
+
+- The scroll tracking uses `window.pageXOffset`, `window.pageYOffset` for viewport scroll.
+- For element scroll, it uses the element's `scrollLeft`, `scrollTop`, `scrollWidth`, `scrollHeight`, `offsetWidth`, and `offsetHeight` properties.
+
+## Types
+
+### `ScrollMotionValues`
+
+```typescript
+interface ScrollMotionValues {
+  scrollX: MotionValue<number>
+  scrollY: MotionValue<number>
+  scrollXProgress: MotionValue<number>
+  scrollYProgress: MotionValue<number>
+}
+```
+
+### `ScrollOffsets`
+
+```typescript
+interface ScrollOffsets {
+  xOffset: number
+  yOffset: number
+  xMaxOffset: number
+  yMaxOffset: number
+}
+```
+
+## Related
+
+- [useMotionValue](/api/use-motion-value)
+- [useTransform](/api/use-transform)
+- [useVelocity](/api/use-velocity)
+- [useSpring](/api/use-spring)

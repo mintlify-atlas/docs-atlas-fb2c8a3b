@@ -1,0 +1,219 @@
+---
+title: useTransform
+description: Transform the output of a MotionValue by mapping it from one range to another.
+---
+
+`useTransform` creates a `MotionValue` that transforms the output of another `MotionValue` by mapping it from one range of values into another.
+
+## Import
+
+```typescript
+import { useTransform } from 'motion-start'
+```
+
+## Usage
+
+Map values from an input range to an output range:
+
+```svelte
+<script>
+  import { Motion, useMotionValue, useTransform } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  const opacity = useTransform(x, [-100, 0, 100], [0, 1, 0])
+</script>
+
+<Motion let:motion animate={{ x: 100 }} style={{ opacity, x }}>
+  <div use:motion />
+</Motion>
+```
+
+## Signatures
+
+### Range mapping
+
+Transform a `MotionValue` by mapping it from an input range to an output range.
+
+```typescript
+function useTransform<O>(
+  value: MotionValue<number>,
+  inputRange: number[],
+  outputRange: O[],
+  options?: TransformOptions<O>
+): MotionValue<O> & {
+  reset: (value: MotionValue<number>, inputRange: number[], outputRange: O[], options?: TransformOptions<O>) => void
+}
+```
+
+<ParamField path="value" type="MotionValue<number>" required>
+  The `MotionValue` to transform.
+</ParamField>
+
+<ParamField path="inputRange" type="number[]" required>
+  A linear series of numbers (either all increasing or decreasing).
+</ParamField>
+
+<ParamField path="outputRange" type="O[]" required>
+  A series of numbers, colors, or strings. Must be the same length as `inputRange`.
+</ParamField>
+
+<ParamField path="options" type="TransformOptions<O>">
+  Transform options including `clamp` and `ease`.
+</ParamField>
+
+### Function transformer
+
+Transform a `MotionValue` through a function.
+
+```typescript
+function useTransform<I, O>(
+  input: MotionValue<I>,
+  transformer: (value: I) => O
+): MotionValue<O> & {
+  reset: (input: MotionValue<I>, transformer: (value: I) => O) => void
+}
+```
+
+<ParamField path="input" type="MotionValue<I>" required>
+  A `MotionValue` that will pass its latest value through `transformer` to update the returned `MotionValue`.
+</ParamField>
+
+<ParamField path="transformer" type="(value: I) => O" required>
+  A function that accepts the latest value from `input` and returns a new value.
+</ParamField>
+
+### Multiple inputs
+
+Pass an array of `MotionValue`s and a function to combine them.
+
+```typescript
+function useTransform<I, O>(
+  input: MotionValue<I>[],
+  transformer: (values: I[]) => O
+): MotionValue<O>
+```
+
+<ParamField path="input" type="MotionValue<I>[]" required>
+  An array of `MotionValue`s that will pass their latest values through `transformer` to update the returned `MotionValue`.
+</ParamField>
+
+<ParamField path="transformer" type="(values: I[]) => O" required>
+  A function that accepts the latest values from `input` and returns a new value.
+</ParamField>
+
+<ResponseField name="MotionValue" type="MotionValue<O>">
+  A transformed `MotionValue` that updates when the input(s) change.
+</ResponseField>
+
+## Options
+
+### `TransformOptions<T>`
+
+```typescript
+interface TransformOptions<T> {
+  clamp?: boolean
+  ease?: Easing | Easing[]
+}
+```
+
+<ParamField path="clamp" type="boolean" default="true">
+  Clamp values to within the given range.
+</ParamField>
+
+<ParamField path="ease" type="Easing | Easing[]">
+  Easing functions to use on the interpolations between each value in the input and output ranges. If provided as an array, the array must be one item shorter than the input and output ranges, as the easings apply to the transition between each.
+</ParamField>
+
+## Examples
+
+### Range mapping
+
+Given an input range of `[-200, -100, 100, 200]` and an output range of `[0, 1, 1, 0]`, the returned `MotionValue` will:
+
+- When provided a value between `-200` and `-100`, will return a value between `0` and `1`.
+- When provided a value between `-100` and `100`, will return `1`.
+- When provided a value between `100` and `200`, will return a value between `1` and `0`.
+
+```svelte
+<script>
+  import { Motion, useMotionValue, useTransform } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  const xRange = [-200, -100, 100, 200]
+  const opacityRange = [0, 1, 1, 0]
+  const opacity = useTransform(x, xRange, opacityRange)
+</script>
+
+<Motion let:motion animate={{ x: 200 }} style={{ opacity, x }}>
+  <div use:motion />
+</Motion>
+```
+
+### Function transformer
+
+In this example, `y` will always be double `x`.
+
+```svelte
+<script>
+  import { Motion, useMotionValue, useTransform } from 'motion-start'
+  
+  const x = useMotionValue(10)
+  const y = useTransform(x, value => value * 2)
+</script>
+
+<Motion let:motion style={{ x, y }}>
+  <div use:motion />
+</Motion>
+```
+
+### Combining multiple values
+
+In this example, `z` will be `x` multiplied by `y`.
+
+```svelte
+<script>
+  import { Motion, useMotionValue, useTransform } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  const y = useMotionValue(0)
+  const z = useTransform([x, y], ([latestX, latestY]) => latestX * latestY)
+</script>
+
+<Motion let:motion style={{ x, y, z }}>
+  <div use:motion />
+</Motion>
+```
+
+### With transform options
+
+```svelte
+<script>
+  import { Motion, useMotionValue, useTransform } from 'motion-start'
+  import { easeInOut } from 'popmotion'
+  
+  const x = useMotionValue(0)
+  const opacity = useTransform(
+    x,
+    [0, 100],
+    [0, 1],
+    { ease: easeInOut, clamp: false }
+  )
+</script>
+
+<Motion let:motion style={{ x, opacity }}>
+  <div use:motion />
+</Motion>
+```
+
+## Notes
+
+- The input range must be a linear series of numbers.
+- The output range can be any value type supported by Motion Start: numbers, colors, shadows, etc.
+- Every value in the output range must be of the same type and in the same format.
+
+## Related
+
+- [useMotionValue](/api/use-motion-value)
+- [useSpring](/api/use-spring)
+- [useVelocity](/api/use-velocity)
+- [useScroll](/api/use-scroll)

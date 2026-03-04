@@ -1,0 +1,540 @@
+---
+title: Motion values
+description: Track and transform animated values with Motion Start's reactive MotionValue system
+---
+
+## What are motion values?
+
+Motion values are reactive containers that track the state and velocity of animated values. They enable high-performance animations by updating outside of Svelte's reactivity system, avoiding unnecessary re-renders.
+
+```typescript
+export class MotionValue<V = any> implements Writable<V> {
+  subscribe(subscription: Subscriber<V>): Unsubscriber
+  update(cb: (value: V) => V): void
+  onChange(subscription: Subscriber<V>): () => void
+  set(v: V, render?: boolean): void
+  get(): V
+  getVelocity(): number
+  // ... more methods
+}
+```
+
+<Info>
+Motion values are compatible with Svelte stores, so you can use them with Svelte's `$` syntax for reactive updates in your templates.
+</Info>
+
+## Creating motion values
+
+Use `useMotionValue` (or `motionValue`) to create a motion value:
+
+```typescript
+export function useMotionValue<V>(init: V, startStopNotifier?: () => () => void): MotionValue<V>
+```
+
+```svelte
+<script>
+  import { Motion, useMotionValue } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  const opacity = useMotionValue(1)
+</script>
+
+<Motion.div style={{ x, opacity }}>
+  Controlled by motion values
+</Motion.div>
+```
+
+## Why use motion values?
+
+Motion values provide several key benefits:
+
+### 1. Performance
+
+Motion values update without triggering Svelte re-renders, making animations buttery smooth:
+
+```svelte
+<script>
+  import { Motion, useMotionValue } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  
+  // Updates happen every frame without re-rendering
+  function handleDrag(event, info) {
+    x.set(info.offset.x)
+  }
+</script>
+
+<Motion.div
+  drag="x"
+  style={{ x }}
+  onDrag={handleDrag}
+/>
+```
+
+### 2. Velocity tracking
+
+Motion values automatically track velocity, useful for physics-based interactions:
+
+```svelte
+<script>
+  import { Motion, useMotionValue } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  
+  function logVelocity() {
+    console.log('Current velocity:', x.getVelocity(), 'px/s')
+  }
+</script>
+
+<Motion.div 
+  drag="x"
+  style={{ x }}
+  onDragEnd={logVelocity}
+/>
+```
+
+### 3. Shared state
+
+Share motion values across multiple components for synchronized animations:
+
+```svelte
+<script>
+  import { Motion, useMotionValue } from 'motion-start'
+  
+  const sharedX = useMotionValue(0)
+</script>
+
+<Motion.div
+  drag="x"
+  style={{ x: sharedX }}
+>
+  Leader
+</Motion.div>
+
+<Motion.div
+  style={{ x: sharedX }}
+>
+  Follower
+</Motion.div>
+```
+
+## Reading and writing values
+
+### Setting values
+
+Use `.set()` to update a motion value:
+
+```svelte
+<script>
+  import { useMotionValue } from 'motion-start'
+  
+  const scale = useMotionValue(1)
+  
+  function grow() {
+    scale.set(1.5)
+  }
+  
+  function shrink() {
+    scale.set(0.5)
+  }
+</script>
+```
+
+### Getting values
+
+Use `.get()` to read the current value:
+
+```svelte
+<script>
+  import { useMotionValue } from 'motion-start'
+  
+  const x = useMotionValue(100)
+  
+  function logPosition() {
+    console.log('Current x:', x.get())
+  }
+</script>
+```
+
+### Subscribing to changes
+
+Use `.onChange()` or `.subscribe()` to react to value changes:
+
+```svelte
+<script>
+  import { useMotionValue } from 'motion-start'
+  import { onDestroy } from 'svelte'
+  
+  const x = useMotionValue(0)
+  
+  // Framer Motion style
+  const unsubscribe = x.onChange(value => {
+    console.log('x changed to:', value)
+  })
+  
+  onDestroy(() => {
+    unsubscribe()
+  })
+  
+  // Svelte store style (auto-cleanup)
+  $: console.log('x is:', $x)
+</script>
+```
+
+<Tabs>
+  <Tab title="onChange">
+    ```javascript
+    const x = useMotionValue(0)
+    
+    const unsubscribe = x.onChange(value => {
+      console.log('New value:', value)
+    })
+    
+    // Clean up when done
+    onDestroy(unsubscribe)
+    ```
+  </Tab>
+  <Tab title="Svelte store syntax">
+    ```svelte
+    <script>
+      const x = useMotionValue(0)
+      
+      // Automatically reactive and cleaned up
+      $: console.log('x is:', $x)
+    </script>
+    
+    <div>Current: {$x}</div>
+    ```
+  </Tab>
+</Tabs>
+
+## Transforming motion values
+
+Create derived motion values using `useTransform`:
+
+### Range mapping
+
+Map from one range to another:
+
+```typescript
+export function useTransform<O>(
+  value: MotionValue<number>,
+  inputRange: number[],
+  outputRange: O[],
+  options?: TransformOptions<O>
+): MotionValue<O>
+```
+
+```svelte
+<script>
+  import { Motion, useMotionValue, useTransform } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  
+  // Map x position to opacity
+  const opacity = useTransform(
+    x,
+    [-200, 0, 200],
+    [0, 1, 0]
+  )
+  
+  // Map x position to color
+  const backgroundColor = useTransform(
+    x,
+    [-200, 0, 200],
+    ['#ff0055', '#0099ff', '#00ff88']
+  )
+</script>
+
+<Motion.div
+  drag="x"
+  style={{ x, opacity, backgroundColor }}
+>
+  Drag to see color and opacity change
+</Motion.div>
+```
+
+<Note>
+The input range must be a linear series of numbers. The output range can be any type: numbers, colors, shadows, etc.
+</Note>
+
+### Function transform
+
+Transform values using a custom function:
+
+```typescript
+export function useTransform<I, O>(
+  input: MotionValue<I>,
+  transformer: (value: I) => O
+): MotionValue<O>
+```
+
+```svelte
+<script>
+  import { Motion, useMotionValue, useTransform } from 'motion-start'
+  
+  const x = useMotionValue(10)
+  const y = useTransform(x, value => value * 2)
+  
+  // y is always double x
+</script>
+
+<Motion.div style={{ x, y }}>
+  x: {$x}, y: {$y}
+</Motion.div>
+```
+
+### Combining motion values
+
+Combine multiple motion values:
+
+```svelte
+<script>
+  import { Motion, useMotionValue, useTransform } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  const y = useMotionValue(0)
+  
+  const distance = useTransform(
+    [x, y],
+    ([latestX, latestY]) => {
+      const distanceFromOrigin = Math.sqrt(latestX**2 + latestY**2)
+      return Math.round(distanceFromOrigin)
+    }
+  )
+</script>
+
+<Motion.div drag style={{ x, y }}>
+  Distance: {$distance}px
+</Motion.div>
+```
+
+## Motion templates
+
+Create string templates that combine multiple motion values:
+
+```svelte
+<script>
+  import { Motion, useMotionValue, useMotionTemplate } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  const y = useMotionValue(0)
+  const rotate = useMotionValue(0)
+  
+  const transform = useMotionTemplate`translateX(${x}px) translateY(${y}px) rotate(${rotate}deg)`
+</script>
+
+<div style:transform={$transform}>
+  Custom transform
+</div>
+```
+
+## Spring motion values
+
+Create motion values that animate with spring physics:
+
+```svelte
+<script>
+  import { Motion, useMotionValue, useSpring } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  const smoothX = useSpring(x, { stiffness: 100, damping: 20 })
+  
+  // smoothX follows x with spring physics
+</script>
+
+<Motion.div
+  drag="x"
+  style={{ x }}
+/>
+
+<Motion.div
+  style={{ x: smoothX }}
+>
+  Smooth follower
+</Motion.div>
+```
+
+## Velocity tracking
+
+Track the velocity of any motion value:
+
+```svelte
+<script>
+  import { Motion, useMotionValue, useVelocity } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  const xVelocity = useVelocity(x)
+</script>
+
+<Motion.div
+  drag="x"
+  style={{ x }}
+>
+  Drag me
+</Motion.div>
+
+<div>Velocity: {$xVelocity} px/s</div>
+```
+
+## Scroll motion values
+
+### Viewport scroll
+
+Track window scroll position:
+
+```svelte
+<script>
+  import { useViewportScroll, useTransform } from 'motion-start'
+  
+  const { scrollY, scrollYProgress } = useViewportScroll()
+  
+  const opacity = useTransform(
+    scrollYProgress,
+    [0, 0.5, 1],
+    [1, 0.5, 0]
+  )
+</script>
+
+<Motion.div style={{ opacity }}>
+  Fades as you scroll
+</Motion.div>
+```
+
+### Element scroll
+
+Track an element's scroll position:
+
+```svelte
+<script>
+  import { Motion, useElementScroll } from 'motion-start'
+  
+  let scrollContainer
+  const { scrollYProgress } = useElementScroll(scrollContainer)
+</script>
+
+<div bind:this={scrollContainer} style="height: 400px; overflow-y: scroll;">
+  <div style="height: 1000px;">
+    <Motion.div
+      style={{ 
+        scaleX: scrollYProgress,
+        transformOrigin: 'left'
+      }}
+    >
+      Progress bar
+    </Motion.div>
+  </div>
+</div>
+```
+
+## Advanced: Custom value types
+
+Define custom value types with mixing logic:
+
+```typescript
+export interface CustomValueType {
+  mix: (from: any, to: any) => (p: number) => number | string
+  toValue: () => number | string
+}
+```
+
+```svelte
+<script>
+  import { useMotionValue } from 'motion-start'
+  
+  const customValue = {
+    mix: (from, to) => (progress) => {
+      // Custom interpolation logic
+      return from + (to - from) * progress
+    },
+    toValue: () => 'custom'
+  }
+</script>
+```
+
+## Motion value lifecycle
+
+### Cleanup
+
+Motion values created with `useMotionValue` are automatically cleaned up. Manual cleanup is only needed if you create them with `motionValue()`:
+
+```svelte
+<script>
+  import { motionValue } from 'motion-start'
+  import { onDestroy } from 'svelte'
+  
+  const x = motionValue(0)
+  
+  onDestroy(() => {
+    x.destroy()
+  })
+</script>
+```
+
+### Stop animations
+
+Stop ongoing animations on a motion value:
+
+```svelte
+<script>
+  import { useMotionValue } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  
+  function stopAnimation() {
+    x.stop()
+  }
+</script>
+```
+
+## Motion value API reference
+
+```typescript
+class MotionValue<V> {
+  // Svelte store compatibility
+  subscribe(subscription: Subscriber<V>): Unsubscriber
+  update(cb: (value: V) => V): void
+  
+  // Core methods
+  set(v: V, render?: boolean): void
+  get(): V
+  getPrevious(): V
+  
+  // Change notifications
+  onChange(subscription: Subscriber<V>): () => void
+  clearListeners(): void
+  
+  // Velocity
+  getVelocity(): number
+  
+  // Animation control
+  start(animation: StartAnimation): Promise<void>
+  stop(): void
+  isAnimating(): boolean
+  
+  // Lifecycle
+  destroy(): void
+}
+```
+
+## Best practices
+
+<Accordion title="Use motion values for drag and scroll">
+  Motion values shine in drag and scroll scenarios where values update frequently. They bypass Svelte's reactivity system for optimal performance.
+</Accordion>
+
+<Accordion title="Share motion values sparingly">
+  While you can share motion values across components, consider if you actually need synchronized state. Independent animations often feel more natural.
+</Accordion>
+
+<Accordion title="Transform for derived values">
+  Use `useTransform` instead of derived stores when creating computed values from motion values. It's optimized for animation performance.
+</Accordion>
+
+<Accordion title="Read infrequently, write often">
+  Motion values are designed for frequent writes (animations) and infrequent reads. Avoid calling `.get()` every frame.
+</Accordion>
+
+<Accordion title="Leverage Svelte store syntax">
+  Motion values work with Svelte's `$` syntax, giving you the best of both worlds: performance and ergonomics.
+</Accordion>

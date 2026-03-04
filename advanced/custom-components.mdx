@@ -1,0 +1,295 @@
+---
+title: Custom components
+description: Create custom motion components using createMotionComponent and createDomMotionComponent
+---
+
+## Overview
+
+Motion Start provides APIs to create your own motion components. This is useful when you want to:
+- Wrap custom Svelte components with motion capabilities
+- Create reusable animated components with preset configurations
+- Build specialized motion components for your design system
+
+## Using createDomMotionComponent
+
+The `createDomMotionComponent` function creates a motion component for a specific DOM element:
+
+```svelte
+<script>
+import { createDomMotionComponent } from 'motion-start'
+
+const MotionArticle = createDomMotionComponent('article')
+</script>
+
+<MotionArticle 
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
+>
+  <h1>Article Title</h1>
+  <p>Article content...</p>
+</MotionArticle>
+```
+
+<Info>
+This is primarily useful in environments that don't support Proxy, as the standard `motion` component uses Proxy to dynamically create motion components for any DOM element.
+</Info>
+
+## Using createMotionComponent
+
+For more advanced use cases, `createMotionComponent` allows you to create fully custom motion components with specific configurations:
+
+```typescript
+import { createMotionComponent } from 'motion-start'
+import type { MotionComponentConfig } from 'motion-start'
+
+const config: MotionComponentConfig<HTMLElement, RenderState> = {
+  preloadedFeatures: featureBundle,
+  createVisualElement: customVisualElement,
+  useRender: customRender,
+  useVisualState: customVisualState,
+  Component: 'div'
+}
+
+const CustomMotion = createMotionComponent(config)
+```
+
+## Configuration options
+
+### preloadedFeatures
+
+You can preload specific animation features for your custom component:
+
+```typescript
+import { animations, drag } from 'motion-start'
+
+const config = {
+  preloadedFeatures: {
+    ...animations,
+    ...drag
+  },
+  // ... other config
+}
+```
+
+When features are preloaded, they're loaded immediately when the component is created:
+
+```typescript
+// From motion/index.ts:38-45
+export const createMotionComponent = ({
+  preloadedFeatures,
+  createVisualElement,
+  useRender: forwardMotionProps,
+  useVisualState: visualStateConfig,
+  Component,
+}: MotionComponentConfig) => {
+  preloadedFeatures && loadFeatures(preloadedFeatures);
+  // ...
+}
+```
+
+### createVisualElement
+
+This function creates the visual element that manages the component's animation state. For DOM components, Motion Start provides `createDomVisualElement`.
+
+### useRender
+
+Defines how the component renders and forwards props to the underlying element.
+
+### useVisualState
+
+Manages the visual state of the component, including initial values and updates.
+
+### Component
+
+The underlying component to render - can be a string (like 'div') or a Svelte component.
+
+## Creating a custom motion proxy
+
+You can create your own motion proxy with a specific feature set using `createMotionProxy`:
+
+```typescript
+import { createMotionProxy, animations } from 'motion-start'
+
+// Create a minimal motion proxy with only animation features
+const minimalMotion = createMotionProxy({ ...animations })
+```
+
+This is how the `m` component is created:
+
+```typescript
+// From render/dom/motion-minimal.ts:10-17
+import { animations } from './featureBundle.js';
+import { createMotionProxy } from './motion-proxy.js';
+
+var m = createMotionProxy({ ...animations });
+
+export { m };
+```
+
+## Building a design system component
+
+Here's an example of creating a custom card component with preset animations:
+
+```svelte
+<script lang="ts">
+import { Motion } from 'motion-start'
+import type { MotionProps } from 'motion-start'
+
+interface CardProps extends MotionProps {
+  variant?: 'elevated' | 'outlined'
+  interactive?: boolean
+}
+
+let { 
+  variant = 'elevated',
+  interactive = false,
+  ...motionProps 
+}: CardProps = $props()
+
+const baseStyles = "rounded-lg p-4"
+const variantStyles = {
+  elevated: "shadow-lg bg-white",
+  outlined: "border-2 border-gray-200"
+}
+
+const hoverAnimation = interactive ? {
+  scale: 1.02,
+  transition: { duration: 0.2 }
+} : undefined
+</script>
+
+<Motion.div
+  class="{baseStyles} {variantStyles[variant]}"
+  whileHover={hoverAnimation}
+  {...motionProps}
+>
+  <slot />
+</Motion.div>
+```
+
+Usage:
+
+```svelte
+<Card 
+  variant="elevated"
+  interactive
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+>
+  <h3>Card Title</h3>
+  <p>Card content</p>
+</Card>
+```
+
+## Wrapping custom Svelte components
+
+You can wrap your own Svelte components to add motion capabilities:
+
+```svelte
+<!-- CustomButton.svelte -->
+<script lang="ts">
+import { Motion } from 'motion-start'
+import type { MotionProps } from 'motion-start'
+
+interface ButtonProps extends MotionProps {
+  variant?: 'primary' | 'secondary'
+  size?: 'sm' | 'md' | 'lg'
+}
+
+let { 
+  variant = 'primary',
+  size = 'md',
+  ...motionProps 
+}: ButtonProps = $props()
+
+const variants = {
+  primary: "bg-blue-600 text-white",
+  secondary: "bg-gray-200 text-gray-800"
+}
+
+const sizes = {
+  sm: "px-3 py-1 text-sm",
+  md: "px-4 py-2 text-base",
+  lg: "px-6 py-3 text-lg"
+}
+</script>
+
+<Motion.button
+  class="rounded {variants[variant]} {sizes[size]}"
+  whileHover={{ scale: 1.05 }}
+  whileTap={{ scale: 0.95 }}
+  {...motionProps}
+>
+  <slot />
+</Motion.button>
+```
+
+## How motion proxy works
+
+The `createMotionProxy` function uses JavaScript Proxy to dynamically create motion components:
+
+```typescript
+// From render/dom/motion-proxy.ts:75-132
+function createMotionProxy(features) {
+  features && loadFeatures(features);
+  return new Proxy({}, {
+    get(_target, key: string) {
+      let type = false;
+      if (
+        key.toString().slice(0, 1) === key.toString().slice(0, 1).toLowerCase()
+      ) {
+        type = isSVGComponent(key);
+      }
+
+      return new Proxy(MotionProxy, {
+        construct(target, args) {
+          // Setup component with tag name and SVG detection
+          if (!args[0]?.props) {
+            args[0].props = { ___tag: key, isSVG: type };
+          }
+          return new target(...args);
+        }
+      });
+    },
+  });
+}
+```
+
+This allows you to use any HTML or SVG element as `motion.elementName` or `m.elementName`.
+
+## Best practices
+
+<Tip>
+**Use the standard motion or m components when possible** - Only create custom motion components when you need specific preloaded features or custom rendering logic.
+</Tip>
+
+<Warning>
+When creating custom components, ensure you properly forward all motion props to the underlying motion component to preserve animation functionality.
+</Warning>
+
+<Accordion title="When should I create custom motion components?">
+Create custom motion components when:
+- Building a design system with consistent animation patterns
+- You need specific features preloaded for performance
+- You're in an environment without Proxy support
+- You want to encapsulate complex animation logic
+</Accordion>
+
+<Accordion title="What's the difference between createMotionComponent and createMotionProxy?">
+`createMotionComponent` creates a single motion component with specific configuration, while `createMotionProxy` creates a proxy object that can create motion components for any HTML/SVG element dynamically.
+</Accordion>
+
+## TypeScript support
+
+All custom component APIs are fully typed. When creating custom components, you can extend the base `MotionProps` type:
+
+```typescript
+import type { MotionProps } from 'motion-start'
+
+interface CustomMotionProps extends MotionProps {
+  customProp?: string
+  onCustomEvent?: () => void
+}
+```
+
+This ensures type safety while maintaining access to all motion animation props.

@@ -1,0 +1,225 @@
+---
+title: Shared layout animations
+description: Create seamless layout transitions between components with shared layout IDs
+---
+
+Shared layout animations allow different components to animate smoothly between each other. When one component with a `layoutId` is removed and another with the same `layoutId` appears, Motion Start will animate between them.
+
+## Basic setup
+
+Wrap your components with `AnimateSharedLayout` and give components the same `layoutId` to animate between them:
+
+```svelte
+<script>
+  import { AnimateSharedLayout, MotionDiv } from 'motion-start';
+  
+  let selected = $state('a');
+</script>
+
+<AnimateSharedLayout>
+  <div style="display: flex; gap: 20px;">
+    <MotionDiv
+      layoutId="selector"
+      animate={{ backgroundColor: selected === 'a' ? '#0088ff' : '#ddd' }}
+      onclick={() => selected = 'a'}
+      style="padding: 20px; cursor: pointer;"
+    >
+      Option A
+    </MotionDiv>
+    
+    <MotionDiv
+      layoutId="selector"
+      animate={{ backgroundColor: selected === 'b' ? '#0088ff' : '#ddd' }}
+      onclick={() => selected = 'b'}
+      style="padding: 20px; cursor: pointer;"
+    >
+      Option B
+    </MotionDiv>
+  </div>
+</AnimateSharedLayout>
+```
+
+<Note>
+Components sharing a `layoutId` will automatically animate their position, size, and other properties when switching between them.
+</Note>
+
+## How it works
+
+`AnimateSharedLayout` coordinates animations across multiple components:
+
+<Steps>
+  <Step title="Register components">
+    When components mount, they register themselves with the shared layout context if they have a `layoutId`.
+  </Step>
+  
+  <Step title="Track layout changes">
+    The context maintains a map of layout "stacks" - groups of components that share the same `layoutId`.
+  </Step>
+  
+  <Step title="Coordinate animations">
+    When the DOM updates, AnimateSharedLayout snapshots the previous positions, measures new positions, and orchestrates smooth transitions.
+  </Step>
+</Steps>
+
+Source: [AnimateSharedLayout.svelte:38
+
+## Crossfade transitions
+
+Use the `type="crossfade"` prop to create a crossfade effect between shared layout components:
+
+```svelte
+<script>
+  import { AnimateSharedLayout, AnimatePresence, MotionDiv } from 'motion-start';
+  
+  let activeId = $state('item1');
+  
+  const items = [
+    { id: 'item1', title: 'First Item', content: 'Content for first item' },
+    { id: 'item2', title: 'Second Item', content: 'Content for second item' },
+    { id: 'item3', title: 'Third Item', content: 'Content for third item' }
+  ];
+  
+  $: activeItem = items.find(item => item.id === activeId);
+</script>
+
+<AnimateSharedLayout type="crossfade">
+  <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+    {#each items as item}
+      <button onclick={() => activeId = item.id}>
+        {item.title}
+      </button>
+    {/each}
+  </div>
+  
+  <AnimatePresence>
+    {#if activeItem}
+      <MotionDiv
+        layoutId="content"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        <h2>{activeItem.title}</h2>
+        <p>{activeItem.content}</p>
+      </MotionDiv>
+    {/if}
+  </AnimatePresence>
+</AnimateSharedLayout>
+```
+
+<Info>
+The `"crossfade"` type makes the outgoing and incoming components both visible during the transition, creating a smooth blend effect.
+</Info>
+
+## Tab selection indicator
+
+A common use case is creating an animated tab selection indicator:
+
+```svelte
+<script>
+  import { AnimateSharedLayout, MotionDiv } from 'motion-start';
+  
+  let selectedTab = $state(0);
+  const tabs = ['Home', 'About', 'Services', 'Contact'];
+</script>
+
+<AnimateSharedLayout>
+  <nav style="display: flex; gap: 0; border-bottom: 2px solid #eee;">
+    {#each tabs as tab, i}
+      <button
+        onclick={() => selectedTab = i}
+        style="
+          position: relative;
+          padding: 12px 24px;
+          background: none;
+          border: none;
+          cursor: pointer;
+        "
+      >
+        {tab}
+        
+        {#if selectedTab === i}
+          <MotionDiv
+            layoutId="tab-indicator"
+            style="
+              position: absolute;
+              bottom: -2px;
+              left: 0;
+              right: 0;
+              height: 2px;
+              background: #0088ff;
+            "
+          />
+        {/if}
+      </button>
+    {/each}
+  </nav>
+</AnimateSharedLayout>
+```
+
+## Understanding presence states
+
+When combined with `AnimatePresence`, components go through different presence states:
+
+- **Entering** (0): Component is entering the tree
+- **Present** (1): Component is in the tree
+- **Exiting** (2): Component is leaving the tree
+
+These states help coordinate animations between entering and exiting components.
+
+Source: [types.ts:13
+
+## Layout animation lifecycle
+
+The shared layout animation system follows a precise lifecycle:
+
+<Accordion title="Snapshot phase">
+  Before any DOM changes, the system snapshots the current positions and dimensions of all registered components.
+  
+  Source: [AnimateSharedLayout.svelte:161
+</Accordion>
+
+<Accordion title="Measure phase">
+  After the DOM updates, components measure their new positions and dimensions.
+  
+  Source: [AnimateSharedLayout.svelte:114
+</Accordion>
+
+<Accordion title="Animate phase">
+  The system calculates the difference between snapshots and current positions, then animates the transform to create smooth transitions.
+  
+  Source: [AnimateSharedLayout.svelte:118
+</Accordion>
+
+## Best practices
+
+<Steps>
+  <Step title="Use unique layoutIds">
+    Ensure `layoutId` values are unique within the same `AnimateSharedLayout` context. Components with the same `layoutId` are treated as transformations of each other.
+  </Step>
+  
+  <Step title="Combine with AnimatePresence">
+    For enter/exit animations with layout transitions, wrap components in both `AnimateSharedLayout` and `AnimatePresence`.
+  </Step>
+  
+  <Step title="Keep layouts simple">
+    Shared layout animations work best with simple layouts. Complex nested structures may cause performance issues.
+  </Step>
+  
+  <Step title="Test performance">
+    Layout animations can be CPU-intensive. Test on lower-end devices to ensure smooth performance.
+  </Step>
+</Steps>
+
+## Props reference
+
+<ParamField path="type" type="'switch' | 'crossfade'" default="switch">
+  Controls how components transition when `layoutId` changes:
+  
+  - `"switch"`: The old component hides instantly, the new one performs the full transition
+  - `"crossfade"`: Both components are visible during transition, creating a crossfade effect
+</ParamField>
+
+<Warning>
+`AnimateSharedLayout` relies on layout measurements and can trigger reflows. Use it judiciously for the best performance.
+</Warning>

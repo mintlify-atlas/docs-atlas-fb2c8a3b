@@ -1,0 +1,256 @@
+---
+title: Utilities
+description: Utility functions and hooks for Motion Start
+---
+
+Motion Start provides several utility functions and hooks to enhance your animations and interactions.
+
+## transform
+
+Transforms numbers into other values by mapping them from an input range to an output range.
+
+The input range must be a linear series of numbers. The output range can be any supported value type, such as numbers, colors, shadows, arrays, objects and more. Every value in the output range must be of the same type and in the same format.
+
+### Direct transformation
+
+Transform a single value immediately.
+
+```typescript
+function transform<T>(
+  inputValue: number,
+  inputRange: number[],
+  outputRange: T[],
+  options?: TransformOptions<T>
+): T
+```
+
+<ParamField path="inputValue" type="number" required>
+  A number to transform between the input and output ranges.
+</ParamField>
+
+<ParamField path="inputRange" type="number[]" required>
+  A linear series of numbers (either all increasing or decreasing).
+</ParamField>
+
+<ParamField path="outputRange" type="T[]" required>
+  A series of numbers, colors, strings, or arrays/objects of those. Must be the same length as `inputRange`.
+</ParamField>
+
+<ParamField path="options" type="TransformOptions<T>">
+  Optional configuration.
+  
+  <ParamField path="options.clamp" type="boolean" default="true">
+    Clamp values to within the given range.
+  </ParamField>
+  
+  <ParamField path="options.ease" type="Easing | Easing[]">
+    Easing functions to use on the interpolations between each value in the input and output ranges.
+    
+    If provided as an array, the array must be one item shorter than the input and output ranges, as the easings apply to the transition between each.
+  </ParamField>
+</ParamField>
+
+**Example:**
+
+```typescript
+import { transform } from 'motion-start'
+
+const inputRange = [0, 200]
+const outputRange = [0, 1]
+const output = transform(100, inputRange, outputRange)
+
+console.log(output) // Returns 0.5
+```
+
+### Create a transformer function
+
+Create a reusable transformation function.
+
+```typescript
+function transform<T>(
+  inputRange: number[],
+  outputRange: T[],
+  options?: TransformOptions<T>
+): (inputValue: number) => T
+```
+
+<ParamField path="inputRange" type="number[]" required>
+  A linear series of numbers (either all increasing or decreasing).
+</ParamField>
+
+<ParamField path="outputRange" type="T[]" required>
+  A series of numbers, colors or strings. Must be the same length as `inputRange`.
+</ParamField>
+
+<ParamField path="options" type="TransformOptions<T>">
+  Optional configuration (see above).
+</ParamField>
+
+**Example:**
+
+```typescript
+import { transform } from 'motion-start'
+
+const inputRange = [-200, -100, 100, 200]
+const outputRange = [0, 1, 1, 0]
+const convertRange = transform(inputRange, outputRange)
+
+const output = convertRange(-150)
+console.log(output) // Returns 0.5
+```
+
+## useCycle
+
+Cycles through a series of visual properties. Can be used to toggle between or cycle through animations. It works similar to `useState` in React.
+
+You provide an initial array of possible states, and it returns a Svelte store with a `next` method to cycle through the values.
+
+```typescript
+function useCycle<T>(...items: T[]): Writable<T> & {
+  next: (index?: number) => void
+}
+```
+
+<ParamField path="items" type="T[]" required>
+  Items to cycle through.
+</ParamField>
+
+### Returns
+
+<ResponseField name="store" type="Writable<T> & { next: (index?: number) => void }">
+  A Svelte writable store containing the current value with an additional `next` method.
+  
+  <ResponseField name="next" type="(index?: number) => void">
+    Cycles to the next value. If an index is provided, cycles to that specific index.
+  </ResponseField>
+</ResponseField>
+
+### Usage example
+
+```svelte
+<script>
+  import { useCycle, MotionDiv } from 'motion-start'
+  
+  const x = useCycle(0, 50, 100)
+  
+  function handleTap() {
+    x.next()
+  }
+</script>
+
+<MotionDiv
+  animate={{ x: $x }}
+  onTap={handleTap}
+/>
+```
+
+You can also cycle to a specific index:
+
+```typescript
+x.next(2) // Jump to the third item (index 2)
+```
+
+## useReducedMotion
+
+Returns a Svelte store containing `true` if you should be using reduced motion based on the current device's Reduced Motion setting.
+
+This can be used to implement changes to your UI based on Reduced Motion. For instance, replacing motion-sickness inducing `x`/`y` animations with `opacity`, disabling the autoplay of background videos, or turning off parallax motion.
+
+It will actively respond to changes and update the store with the latest setting.
+
+```typescript
+function useReducedMotion(): Readable<boolean | null>
+```
+
+### Returns
+
+<ResponseField name="shouldReduceMotion" type="Readable<boolean | null>">
+  A Svelte readable store. The value is `true` if reduced motion is preferred, `false` if not, or `null` server-side.
+</ResponseField>
+
+### Usage example
+
+```svelte
+<script>
+  import { useReducedMotion, MotionDiv } from 'motion-start'
+  
+  const shouldReduceMotion = useReducedMotion()
+  
+  $: closedX = $shouldReduceMotion ? 0 : '-100%'
+  
+  export let isOpen = false
+</script>
+
+<MotionDiv
+  animate={{
+    opacity: isOpen ? 1 : 0,
+    x: isOpen ? 0 : closedX
+  }}
+/>
+```
+
+In this example, when reduced motion is preferred, the sidebar will only fade in/out instead of sliding from the side.
+
+## UseDomEvent
+
+A Svelte component that attaches an event listener directly to a DOM element.
+
+Bypassing Svelte's event system can be desirable, for instance when attaching non-passive event handlers.
+
+```typescript
+interface UseDomEventProps {
+  ref: { current: Node } | VisualElement<EventTarget>
+  eventName: string
+  handler?: EventListener
+  options?: AddEventListenerOptions
+}
+```
+
+<ParamField path="ref" type="{ current: Node } | VisualElement<EventTarget>" required>
+  Ref object that's been provided to the element you want to bind the listener to.
+</ParamField>
+
+<ParamField path="eventName" type="string" required>
+  Name of the event you want to listen for.
+</ParamField>
+
+<ParamField path="handler" type="EventListener">
+  Function to fire when receiving the event.
+</ParamField>
+
+<ParamField path="options" type="AddEventListenerOptions">
+  Options to pass to `Event.addEventListener`.
+  
+  Common options include:
+  - `passive`: When `true`, indicates that the function will never call `preventDefault()`
+  - `capture`: When `true`, the listener will be triggered during the capture phase
+  - `once`: When `true`, the listener will be removed after being invoked once
+</ParamField>
+
+### Usage example
+
+```svelte
+<script>
+  import { UseDomEvent } from 'motion-start'
+  
+  let ref
+  
+  function handleWheel(event) {
+    event.preventDefault()
+    console.log('Wheel event:', event)
+  }
+</script>
+
+<UseDomEvent
+  ref={{ current: ref }}
+  eventName="wheel"
+  handler={handleWheel}
+  options={{ passive: false }}
+/>
+
+<div bind:this={ref}>
+  Scroll over me
+</div>
+```
+
+This example shows how to attach a non-passive wheel event listener, which allows you to call `preventDefault()` to prevent the default scroll behavior.

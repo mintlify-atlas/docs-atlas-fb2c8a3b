@@ -1,0 +1,312 @@
+---
+title: AnimateSharedLayout
+description: Coordinate layout animations across multiple motion components
+---
+
+`AnimateSharedLayout` wraps multiple `motion` components with the `layout` or `layoutId` prop, allowing them to react smoothly when any single component changes.
+
+## Import
+
+```javascript
+import { AnimateSharedLayout } from 'motion-start'
+```
+
+## Usage
+
+Wrap several `motion` components with `AnimateSharedLayout` to enable coordinated layout animations. This is especially powerful when combined with `layoutId` for shared element transitions.
+
+```svelte
+<script>
+  import { motion, AnimateSharedLayout } from 'motion-start'
+  
+  let selectedId = $state(null)
+  const items = [
+    { id: 1, title: 'Item 1' },
+    { id: 2, title: 'Item 2' },
+    { id: 3, title: 'Item 3' }
+  ]
+</script>
+
+<AnimateSharedLayout>
+  {#each items as item (item.id)}
+    <motion.div layout onclick={() => selectedId = item.id}>
+      {item.title}
+      {#if selectedId === item.id}
+        <motion.div layoutId="underline" />
+      {/if}
+    </motion.div>
+  {/each}
+</AnimateSharedLayout>
+```
+
+## Props
+
+<ParamField path="type" type="'switch' | 'crossfade'" default="'switch'">
+  When combined with `AnimatePresence`, `AnimateSharedLayout` can customize how to visually switch between `layoutId` components as new ones enter and leave the tree.
+
+  - `"switch"` (default): The old `layoutId` component will be hidden instantly when a new one enters, and the new one will perform the full transition. When the newest one is removed, it will perform the full exit transition and then the old component will be shown instantly.
+  - `"crossfade"`: The root shared components will crossfade as `layoutId` children of both perform the same transition.
+
+  ```svelte
+  <AnimateSharedLayout type="crossfade">
+    <AnimatePresence>
+      {#if showA}
+        <motion.div layoutId="shared" />
+      {:else}
+        <motion.div layoutId="shared" />
+      {/if}
+    </AnimatePresence>
+  </AnimateSharedLayout>
+  ```
+</ParamField>
+
+## Shared layout animations
+
+### With layout prop
+
+Components with the `layout` prop will automatically animate to their new position when their layout changes:
+
+```svelte
+<script>
+  import { motion, AnimateSharedLayout } from 'motion-start'
+  
+  let isExpanded = $state(false)
+</script>
+
+<AnimateSharedLayout>
+  <motion.div
+    layout
+    style={{
+      width: isExpanded ? '300px' : '100px',
+      height: isExpanded ? '300px' : '100px'
+    }}
+    onclick={() => isExpanded = !isExpanded}
+  >
+    Click me
+  </motion.div>
+</AnimateSharedLayout>
+```
+
+### With layoutId prop
+
+Components with the same `layoutId` will animate from one to another when they're swapped:
+
+```svelte
+<script>
+  import { motion, AnimateSharedLayout } from 'motion-start'
+  
+  let selected = $state('home')
+  const tabs = ['home', 'search', 'profile']
+</script>
+
+<AnimateSharedLayout>
+  <nav>
+    {#each tabs as tab (tab)}
+      <button onclick={() => selected = tab}>
+        {tab}
+        {#if selected === tab}
+          <motion.div
+            layoutId="underline"
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '2px',
+              background: 'blue'
+            }}
+          />
+        {/if}
+      </button>
+    {/each}
+  </nav>
+</AnimateSharedLayout>
+```
+
+## Types
+
+### SharedLayoutProps
+
+```typescript
+interface SharedLayoutProps {
+  /**
+   * When combined with `AnimatePresence`, `SharedLayoutProps` can customize 
+   * how to visually switch between `layoutId` components as new ones enter 
+   * and leave the tree.
+   *
+   * - "switch" (default): The old `layoutId` component will be hidden instantly 
+   *   when a new one enters, and the new one will perform the full transition.
+   * - "crossfade": The root shared components will crossfade as `layoutId` 
+   *   children of both perform the same transition.
+   */
+  type?: 'switch' | 'crossfade';
+}
+```
+
+### Presence
+
+Enum representing the presence state of a component:
+
+```typescript
+enum Presence {
+  Entering = 0,
+  Present = 1,
+  Exiting = 2,
+}
+```
+
+### VisibilityAction
+
+Enum for visibility actions:
+
+```typescript
+enum VisibilityAction {
+  Hide = 0,
+  Show = 1,
+}
+```
+
+### SharedLayoutAnimationConfig
+
+```typescript
+interface SharedLayoutAnimationConfig {
+  visibilityAction?: VisibilityAction;
+  originBox?: AxisBox2D;
+  targetBox?: AxisBox2D;
+  transition?: Transition;
+  crossfadeOpacity?: MotionValue<number>;
+  shouldStackAnimate?: boolean;
+  onComplete?: () => void;
+  isRelative?: boolean;
+  prevParent?: VisualElement;
+}
+```
+
+### SyncLayoutBatcher
+
+The exposed API for children to add themselves to the batcher and to flush it:
+
+```typescript
+interface SyncLayoutBatcher {
+  add: (child: VisualElement) => void;
+  flush: (handler?: SyncLayoutLifecycles) => void;
+}
+```
+
+### SharedLayoutSyncMethods
+
+Extra API methods available to children if they're a descendant of `AnimateSharedLayout`:
+
+```typescript
+interface SharedLayoutSyncMethods extends SyncLayoutBatcher {
+  syncUpdate: (force?: boolean) => void;
+  forceUpdate: () => void;
+  register: (child: VisualElement) => void;
+  remove: (child: VisualElement) => void;
+}
+```
+
+## Examples
+
+### Tab navigation with shared underline
+
+```svelte
+<script>
+  import { motion, AnimateSharedLayout } from 'motion-start'
+  
+  let activeTab = $state(0)
+  const tabs = ['Home', 'Search', 'Profile', 'Settings']
+</script>
+
+<AnimateSharedLayout>
+  <div style="display: flex; gap: 1rem;">
+    {#each tabs as tab, i (i)}
+      <button
+        onclick={() => activeTab = i}
+        style="position: relative; padding: 0.5rem 1rem; border: none; background: none;"
+      >
+        {tab}
+        {#if activeTab === i}
+          <motion.div
+            layoutId="active-tab"
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '3px',
+              background: 'var(--primary)'
+            }}
+          />
+        {/if}
+      </button>
+    {/each}
+  </div>
+</AnimateSharedLayout>
+```
+
+### Card expansion
+
+```svelte
+<script>
+  import { motion, AnimateSharedLayout, AnimatePresence } from 'motion-start'
+  
+  let expandedId = $state(null)
+  const cards = [
+    { id: 1, title: 'Card 1', content: 'Content 1' },
+    { id: 2, title: 'Card 2', content: 'Content 2' },
+    { id: 3, title: 'Card 3', content: 'Content 3' }
+  ]
+</script>
+
+<AnimateSharedLayout>
+  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+    {#each cards as card (card.id)}
+      <motion.div
+        layout
+        onclick={() => expandedId = expandedId === card.id ? null : card.id}
+        style={{
+          padding: '1rem',
+          background: 'white',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          ...(expandedId === card.id && { gridColumn: '1 / -1' })
+        }}
+      >
+        <motion.h2 layout>{card.title}</motion.h2>
+        {#if expandedId === card.id}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            {card.content}
+          </motion.p>
+        {/if}
+      </motion.div>
+    {/each}
+  </div>
+</AnimateSharedLayout>
+```
+
+## How it works
+
+`AnimateSharedLayout` works by:
+
+1. **Batching layout measurements** - All layout changes are batched to minimize layout thrashing
+2. **Tracking components** - Components with `layout` or `layoutId` props register themselves with the shared layout context
+3. **Snapshots** - Before layout changes, it takes snapshots of component positions
+4. **Coordinated animations** - After layout changes, it animates all affected components from their previous positions to their new positions
+
+<Note>
+  Layout animations use the FLIP technique (First, Last, Invert, Play) to achieve performant animations by using transforms instead of layout properties.
+</Note>
+
+<Warning>
+  Scale animations can introduce visual distortions on children, `boxShadow`, and `borderRadius`. Add the `layout` prop to children to correct distortions, or animate these properties directly via the `initial` prop.
+</Warning>
+
+## Related
+
+- [motion](/api/motion) - Create animated components with layout support
+- [AnimatePresence](/api/animate-presence) - Combine with shared layouts for complex transitions

@@ -1,0 +1,187 @@
+---
+title: useVelocity
+description: Create a MotionValue that tracks the velocity of another MotionValue.
+---
+
+`useVelocity` creates a `MotionValue` that updates when the velocity of the provided `MotionValue` changes.
+
+## Import
+
+```typescript
+import { useVelocity } from 'motion-start'
+```
+
+## Usage
+
+```svelte
+<script>
+  import { useMotionValue, useVelocity } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  const xVelocity = useVelocity(x)
+  
+  $: console.log('Velocity:', $xVelocity)
+</script>
+```
+
+## Signature
+
+```typescript
+function useVelocity(
+  value: MotionValue<number>
+): MotionValue<number> & {
+  reset: (value: MotionValue<number>) => void
+}
+```
+
+<ParamField path="value" type="MotionValue<number>" required>
+  The `MotionValue` to track the velocity of.
+</ParamField>
+
+<ResponseField name="MotionValue" type="MotionValue<number>">
+  A `MotionValue` that updates with the velocity of the input value.
+</ResponseField>
+
+## Examples
+
+### Basic usage
+
+```svelte
+<script>
+  import { Motion, useMotionValue, useVelocity } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  const xVelocity = useVelocity(x)
+</script>
+
+<Motion let:motion animate={{ x: 100 }} style={{ x }}>
+  <div use:motion />
+</Motion>
+
+<p>Velocity: {$xVelocity}</p>
+```
+
+### Tracking acceleration
+
+You can chain `useVelocity` to track acceleration (the velocity of velocity):
+
+```svelte
+<script>
+  import { useMotionValue, useVelocity } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  const xVelocity = useVelocity(x)
+  const xAcceleration = useVelocity(xVelocity)
+  
+  $: console.log('Position:', $x)
+  $: console.log('Velocity:', $xVelocity)
+  $: console.log('Acceleration:', $xAcceleration)
+</script>
+```
+
+### Velocity-based effects
+
+Use velocity to create dynamic visual effects:
+
+```svelte
+<script>
+  import { Motion, useMotionValue, useVelocity, useTransform } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  const xVelocity = useVelocity(x)
+  
+  // Scale based on velocity
+  const scale = useTransform(
+    xVelocity,
+    [-1000, 0, 1000],
+    [0.5, 1, 1.5]
+  )
+  
+  function handleDrag(event) {
+    x.set(event.clientX)
+  }
+</script>
+
+<Motion 
+  let:motion 
+  style={{ x, scale }}
+  on:drag={handleDrag}
+>
+  <div use:motion />
+</Motion>
+```
+
+### Direction indicator
+
+```svelte
+<script>
+  import { Motion, useMotionValue, useVelocity, useTransform } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  const xVelocity = useVelocity(x)
+  
+  // Rotate based on direction
+  const rotate = useTransform(
+    xVelocity,
+    [-500, 0, 500],
+    [-45, 0, 45]
+  )
+</script>
+
+<Motion let:motion drag="x" style={{ x, rotate }}>
+  <div use:motion>→</div>
+</Motion>
+```
+
+### Velocity threshold
+
+```svelte
+<script>
+  import { useMotionValue, useVelocity } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  const xVelocity = useVelocity(x)
+  
+  let isMovingFast = false
+  
+  $: isMovingFast = Math.abs($xVelocity) > 500
+</script>
+
+<div class:fast={isMovingFast}>
+  {isMovingFast ? 'Moving fast!' : 'Moving slow'}
+</div>
+```
+
+### Resetting the tracked value
+
+You can change which `MotionValue` to track using the `reset` method:
+
+```svelte
+<script>
+  import { useMotionValue, useVelocity } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  const y = useMotionValue(0)
+  const velocity = useVelocity(x)
+  
+  function trackY() {
+    velocity.reset(y)
+  }
+</script>
+
+<button on:click={trackY}>Track Y instead</button>
+```
+
+## Notes
+
+- Velocity is calculated in units per second.
+- The velocity `MotionValue` automatically subscribes to velocity updates from the source value.
+- Velocity is only calculated for numerical values. Non-numerical values will always report a velocity of `0`.
+- The velocity calculation uses the browser's frame delta to provide accurate measurements.
+
+## Related
+
+- [useMotionValue](/api/use-motion-value)
+- [useTransform](/api/use-transform)
+- [useSpring](/api/use-spring)
+- [useScroll](/api/use-scroll)

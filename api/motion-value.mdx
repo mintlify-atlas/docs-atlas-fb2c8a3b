@@ -1,0 +1,237 @@
+---
+title: motionValue
+description: Create a MotionValue to track the state and velocity of animated values.
+---
+
+`motionValue` creates a `MotionValue` instance used to track the state and velocity of motion values. Motion values are compatible with Svelte stores and can be used directly in your components.
+
+## Import
+
+```typescript
+import { motionValue } from 'motion-start'
+```
+
+## Usage
+
+```svelte
+<script>
+  import { motionValue } from 'motion-start'
+  
+  const x = motionValue(0)
+  const opacity = motionValue(1)
+</script>
+```
+
+## Signature
+
+```typescript
+function motionValue<V>(
+  init: V,
+  startStopNotifier?: () => () => void
+): MotionValue<V>
+```
+
+<ParamField path="init" type="V" required>
+  The initial value of the `MotionValue`.
+</ParamField>
+
+<ParamField path="startStopNotifier" type="() => () => void">
+  A function that is called once the first subscriber is added to this motion value. The return function is called when the last subscriber unsubscribes.
+</ParamField>
+
+<ResponseField name="MotionValue" type="MotionValue<V>">
+  A `MotionValue` instance that tracks state and velocity.
+</ResponseField>
+
+## MotionValue class
+
+The `MotionValue` class provides methods to interact with animated values.
+
+### Type definition
+
+```typescript
+class MotionValue<V = any> implements Writable<V> {
+  // Svelte store methods
+  subscribe(subscription: Subscriber<V>): Unsubscriber
+  update(cb: (value: V) => V): void
+  
+  // Value methods
+  set(v: V, render?: boolean): void
+  get(): V
+  getPrevious(): V
+  
+  // Velocity methods
+  getVelocity(): number
+  
+  // Subscription methods
+  onChange(subscription: Subscriber<V>): () => void
+  clearListeners(): void
+  
+  // Animation methods
+  start(animation: StartAnimation): Promise<void>
+  stop(): void
+  isAnimating(): boolean
+  
+  // Lifecycle
+  destroy(): void
+}
+```
+
+### Methods
+
+#### `get()`
+
+Returns the latest state of the `MotionValue`.
+
+```typescript
+get(): V
+```
+
+```javascript
+const x = motionValue(0)
+x.set(10)
+console.log(x.get()) // 10
+```
+
+#### `set()`
+
+Sets the state of the `MotionValue`.
+
+```typescript
+set(v: V, render?: boolean): void
+```
+
+<ParamField path="v" type="V" required>
+  Latest value to set.
+</ParamField>
+
+<ParamField path="render" type="boolean" default="true">
+  Whether to notify render subscribers.
+</ParamField>
+
+```javascript
+const x = motionValue(0)
+x.set(10)
+```
+
+#### `getPrevious()`
+
+Returns the previous state of the `MotionValue`.
+
+```typescript
+getPrevious(): V
+```
+
+#### `getVelocity()`
+
+Returns the latest velocity of the `MotionValue`. Returns `0` if the state is non-numerical.
+
+```typescript
+getVelocity(): number
+```
+
+#### `onChange()`
+
+Adds a function that will be notified when the `MotionValue` is updated. Returns an unsubscribe function.
+
+```typescript
+onChange(subscription: Subscriber<V>): () => void
+```
+
+<ParamField path="subscription" type="(v: V) => void" required>
+  A function that receives the latest value.
+</ParamField>
+
+```svelte
+<script>
+  import { onDestroy } from 'svelte'
+  import { motionValue, transform } from 'motion-start'
+  
+  const x = motionValue(0)
+  const y = motionValue(0)
+  const opacity = motionValue(1)
+
+  function updateOpacity() {
+    const maxXY = Math.max(x.get(), y.get())
+    const newOpacity = transform(maxXY, [0, 100], [1, 0])
+    opacity.set(newOpacity)
+  }
+  
+  const unsubscribeX = x.onChange(updateOpacity)
+  onDestroy(() => {
+    unsubscribeX()
+  })
+</script>
+```
+
+#### `subscribe()`
+
+Svelte store-compatible subscribe method. Same as `onChange()`.
+
+```typescript
+subscribe(subscription: Subscriber<V>): Unsubscriber
+```
+
+#### `update()`
+
+Update method to make `MotionValue` compatible with Svelte writable store.
+
+```typescript
+update(cb: (value: V) => V): void
+```
+
+```javascript
+const x = motionValue(0)
+x.update(v => v + 10)
+```
+
+#### `stop()`
+
+Stop the currently active animation.
+
+```typescript
+stop(): void
+```
+
+#### `isAnimating()`
+
+Returns `true` if this value is currently animating.
+
+```typescript
+isAnimating(): boolean
+```
+
+#### `destroy()`
+
+Destroy and clean up subscribers to this `MotionValue`. The hooks like `useMotionValue` and `useTransform` automatically handle the lifecycle, so this method is only necessary if you've manually created a `MotionValue` via the `motionValue` function.
+
+```typescript
+destroy(): void
+```
+
+## Types
+
+### `Subscriber<T>`
+
+```typescript
+type Subscriber<T> = (v: T) => void
+```
+
+### `PassiveEffect<T>`
+
+```typescript
+type PassiveEffect<T> = (v: T, safeSetter: (v: T) => void) => void
+```
+
+### `StartAnimation`
+
+```typescript
+type StartAnimation = (complete: () => void) => (() => void) | undefined
+```
+
+## Related
+
+- [useMotionValue](/api/use-motion-value)
+- [useTransform](/api/use-transform)
+- [useSpring](/api/use-spring)
+- [useVelocity](/api/use-velocity)

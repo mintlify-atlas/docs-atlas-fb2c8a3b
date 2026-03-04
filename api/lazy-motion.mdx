@@ -1,0 +1,310 @@
+---
+title: LazyMotion
+description: Reduce bundle size by lazy-loading animation features
+---
+
+`LazyMotion` is used in conjunction with the `m` component to reduce bundle size. The `m` component only loads functionality critical for the initial render, while `LazyMotion` can synchronously or asynchronously load animation and gesture support.
+
+## Import
+
+```javascript
+import { LazyMotion, m } from 'motion-start'
+```
+
+## Usage
+
+### Synchronous loading
+
+Load features immediately when your bundle loads:
+
+```svelte
+<script>
+  import { LazyMotion, m, domAnimations } from 'motion-start'
+</script>
+
+<LazyMotion features={domAnimations}>
+  <m.div animate={{ scale: 2 }} />
+</LazyMotion>
+```
+
+### Asynchronous loading
+
+Load features on-demand to reduce initial bundle size:
+
+```svelte
+<script>
+  import { LazyMotion, m } from 'motion-start'
+  
+  const loadFeatures = () => import('motion-start').then(res => res.domAnimations)
+</script>
+
+<LazyMotion features={loadFeatures}>
+  <m.div animate={{ scale: 2 }} />
+</LazyMotion>
+```
+
+## Props
+
+<ParamField path="features" type="FeatureBundle | LazyFeatureBundle" required>
+  Can be used to provide a feature bundle synchronously or asynchronously.
+
+  **Synchronous:**
+  ```svelte
+  <script>
+    import { domAnimations } from 'motion-start'
+  </script>
+
+  <LazyMotion features={domAnimations}>
+    <m.div animate={{ scale: 1.5 }} />
+  </LazyMotion>
+  ```
+
+  **Asynchronous:**
+  ```svelte
+  <script>
+    // features.js
+    // import { domAnimations } from "motion-start"
+    // export default domAnimations
+
+    const loadFeatures = () => import("./features.js")
+      .then(res => res.default)
+  </script>
+
+  <LazyMotion features={loadFeatures}>
+    <m.div animate={{ scale: 1.5 }} />
+  </LazyMotion>
+  ```
+</ParamField>
+
+<ParamField path="strict" type="boolean" default="false">
+  If `true`, will throw an error if a `motion` component renders within a `LazyMotion` component.
+
+  This helps enforce the use of the `m` component to ensure you get the benefits of code-splitting.
+
+  ```svelte
+  <!-- This will throw an error explaining that you should use m instead -->
+  <LazyMotion features={domAnimations} strict>
+    <motion.div /> <!-- Error: use m.div instead -->
+  </LazyMotion>
+  ```
+
+  ```svelte
+  <!-- This works correctly -->
+  <LazyMotion features={domAnimations} strict>
+    <m.div /> <!-- Correct -->
+  </LazyMotion>
+  ```
+</ParamField>
+
+## Types
+
+### LazyProps
+
+```typescript
+interface LazyProps {
+  /**
+   * Can be used to provide a feature bundle synchronously or asynchronously.
+   */
+  features: FeatureBundle | LazyFeatureBundle;
+  
+  /**
+   * If `true`, will throw an error if a `motion` component renders within
+   * a `LazyMotion` component.
+   */
+  strict?: boolean;
+}
+```
+
+### LazyFeatureBundle
+
+```typescript
+type LazyFeatureBundle = () => Promise<FeatureBundle>
+```
+
+### FeatureBundle
+
+```typescript
+interface FeatureBundle {
+  renderer?: any;
+  // Additional feature definitions
+}
+```
+
+## The `m` component
+
+When using `LazyMotion`, you should use the `m` component instead of `motion`. The `m` component is a minimal version that only includes the features needed for initial render.
+
+```svelte
+<script>
+  import { LazyMotion, m, domAnimations } from 'motion-start'
+</script>
+
+<LazyMotion features={domAnimations}>
+  <!-- Use m instead of motion -->
+  <m.div animate={{ x: 100 }} />
+  <m.button whileHover={{ scale: 1.1 }} />
+  <m.span drag />
+</LazyMotion>
+```
+
+## Available feature bundles
+
+### domAnimations
+
+Includes all animation features for DOM elements (transforms, filters, etc.).
+
+```javascript
+import { domAnimations } from 'motion-start'
+```
+
+### domMax
+
+Includes all features including layout animations, drag, and gestures.
+
+```javascript
+import { domMax } from 'motion-start'
+```
+
+## Examples
+
+### Code-split by route
+
+Load animation features only on routes that need them:
+
+```svelte
+<!-- +page.svelte -->
+<script>
+  import { LazyMotion, m } from 'motion-start'
+  
+  // Only load features on this route
+  const loadFeatures = () => import('motion-start/domAnimations')
+</script>
+
+<LazyMotion features={loadFeatures}>
+  <m.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ duration: 0.5 }}
+  >
+    Route content with animations
+  </m.div>
+</LazyMotion>
+```
+
+### Lazy load advanced features
+
+Load basic animations immediately, but lazy-load advanced features like drag:
+
+```svelte
+<script>
+  import { LazyMotion, m, domAnimations } from 'motion-start'
+  import { onMount } from 'svelte'
+  
+  let advancedFeatures = $state(null)
+  
+  onMount(async () => {
+    // Load advanced features after initial render
+    const { domMax } = await import('motion-start')
+    advancedFeatures = domMax
+  })
+</script>
+
+<!-- Basic animations work immediately -->
+<LazyMotion features={domAnimations}>
+  <m.div animate={{ opacity: 1 }}>
+    Immediate animation
+  </m.div>
+</LazyMotion>
+
+<!-- Advanced features load later -->
+{#if advancedFeatures}
+  <LazyMotion features={advancedFeatures}>
+    <m.div drag>
+      Draggable (loaded after mount)
+    </m.div>
+  </LazyMotion>
+{/if}
+```
+
+### With strict mode
+
+Enforce the use of `m` components throughout your codebase:
+
+```svelte
+<script>
+  import { LazyMotion, m, motion, domAnimations } from 'motion-start'
+</script>
+
+<LazyMotion features={domAnimations} strict>
+  <!-- This works -->
+  <m.div animate={{ x: 100 }} />
+  
+  <!-- This throws an error in strict mode -->
+  <!-- <motion.div animate={{ x: 100 }} /> -->
+</LazyMotion>
+```
+
+## Bundle size optimization
+
+Using `LazyMotion` with async feature loading can significantly reduce your initial bundle size:
+
+| Import method | Approximate size |
+|--------------|------------------|
+| `import { motion }` | ~30kb (gzipped) |
+| `import { m }` + sync `domAnimations` | ~28kb (gzipped) |
+| `import { m }` + async `domAnimations` | ~5kb initial + ~23kb lazy (gzipped) |
+
+<Note>
+  Exact sizes depend on which features you use and your bundler's tree-shaking capabilities.
+</Note>
+
+## Best practices
+
+1. **Use async loading when possible** - Maximum bundle size savings
+   ```svelte
+   <LazyMotion features={() => import('./features')}>
+   ```
+
+2. **Enable strict mode in development** - Catch accidental `motion` usage
+   ```svelte
+   <LazyMotion features={features} strict={import.meta.env.DEV}>
+   ```
+
+3. **Create a wrapper component** - Centralize your lazy loading logic
+   ```svelte
+   <!-- AnimationProvider.svelte -->
+   <script>
+     import { LazyMotion } from 'motion-start'
+     const loadFeatures = () => import('./animation-features')
+   </script>
+   
+   <LazyMotion features={loadFeatures} strict>
+     <slot />
+   </LazyMotion>
+   ```
+
+4. **Load features at the app root** - Avoid multiple `LazyMotion` instances
+   ```svelte
+   <!-- +layout.svelte -->
+   <LazyMotion features={loadFeatures}>
+     <slot />
+   </LazyMotion>
+   ```
+
+## How it works
+
+The `m` component is a minimal motion component that includes only the essential rendering logic. When wrapped in `LazyMotion`:
+
+1. If features are provided synchronously, they're loaded immediately
+2. If features are provided as a function, they're loaded asynchronously on mount
+3. Once loaded, all `m` components within the `LazyMotion` tree gain access to the features
+4. The `strict` mode validates that only `m` components (not `motion`) are used
+
+<Warning>
+  Don't mix `motion` and `m` components within the same `LazyMotion` tree, especially with `strict` mode enabled.
+</Warning>
+
+## Related
+
+- [motion](/api/motion) - Full-featured motion component
+- [Performance optimization](/guides/performance) - Learn more about optimizing animations

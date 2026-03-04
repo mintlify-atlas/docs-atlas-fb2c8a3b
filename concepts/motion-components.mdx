@@ -1,0 +1,329 @@
+---
+title: Motion components
+description: Learn how Motion Start's component factory wraps HTML and SVG elements to create animatable components
+---
+
+## What are motion components?
+
+Motion components are the foundation of Motion Start. They're created by a factory that wraps standard HTML and SVG elements, adding animation and gesture capabilities while preserving all native properties and behaviors.
+
+## The Motion factory
+
+Motion Start provides two component factories:
+
+- **`Motion`** (or `motion`) - The full-featured version with all animations, gestures, and layout features
+- **`M`** (or `m`) - The minimal version with only animation support, smaller bundle size
+
+Both factories use a Proxy-based system that dynamically creates components for any HTML or SVG element:
+
+```typescript
+import { motion, createDomMotionComponent } from './render/dom/motion.js'
+import { m } from './render/dom/motion-minimal.js'
+
+var motion = createMotionProxy(featureBundle)
+var m = createMotionProxy({ ...animations })
+```
+
+<Note>
+The factory automatically detects whether an element is SVG based on the tag name, so you don't need special handling for SVG elements.
+</Note>
+
+## Using motion components
+
+You can create motion components for any HTML or SVG element by accessing it as a property:
+
+```svelte
+<script>
+  import { Motion } from 'motion-start'
+</script>
+
+<Motion.div
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
+>
+  Animated div
+</Motion.div>
+
+<Motion.svg width="100" height="100">
+  <Motion.circle
+    cx="50"
+    cy="50"
+    r="30"
+    animate={{ scale: [1, 1.2, 1] }}
+    transition={{ repeat: Infinity }}
+  />
+</Motion.svg>
+```
+
+## Minimal variant (M/m)
+
+For smaller bundle sizes, use the minimal variant that includes only animation features:
+
+```svelte
+<script>
+  import { M } from 'motion-start'
+</script>
+
+<M.div
+  animate={{ x: 100 }}
+  transition={{ duration: 2 }}
+>
+  Lightweight animation
+</M.div>
+```
+
+<Info>
+The minimal variant (`M`/`m`) is approximately 40% smaller than the full version, making it ideal when you don't need drag or gesture features.
+</Info>
+
+## Component props
+
+Motion components accept all standard HTML/SVG attributes plus Motion-specific props:
+
+### Core animation props
+
+```typescript
+interface AnimationProps {
+  /** Values to animate to, variant label(s), or AnimationControls */
+  animate?: AnimationControls | TargetAndTransition | VariantLabels | boolean
+  
+  /** A target to animate to when this component is removed from the tree */
+  exit?: TargetAndTransition | VariantLabels
+  
+  /** Variants allow you to define animation states and organize them by name */
+  variants?: Variants
+  
+  /** Default transition. If no transition is defined in animate, it will use this */
+  transition?: Transition
+}
+```
+
+### Motion style prop
+
+The `style` prop is enhanced to support `MotionValue`s and separate transform values:
+
+```typescript
+type MotionStyle = MotionCSS & MotionTransform & MakeMotion<SVGPathProperties>
+
+interface MotionProps {
+  /** Enhanced style prop with MotionValue support */
+  style?: MotionStyle
+  
+  /** Properties, variant label or array of variant labels to start in */
+  initial?: boolean | Target | VariantLabels
+  
+  /** Custom data to resolve dynamic variants differently for each component */
+  custom?: any
+}
+```
+
+<Tabs>
+  <Tab title="Basic usage">
+    ```svelte
+    <script>
+      import { Motion } from 'motion-start'
+    </script>
+
+    <Motion.div
+      style={{ 
+        backgroundColor: '#ff0055',
+        borderRadius: 8
+      }}
+      animate={{ 
+        scale: 1.2,
+        rotate: 45 
+      }}
+    >
+      Transform me
+    </Motion.div>
+    ```
+  </Tab>
+  <Tab title="With MotionValues">
+    ```svelte
+    <script>
+      import { Motion, useMotionValue } from 'motion-start'
+      
+      const x = useMotionValue(0)
+      const opacity = useMotionValue(1)
+    </script>
+
+    <Motion.div style={{ x, opacity }}>
+      Controlled by MotionValues
+    </Motion.div>
+    ```
+  </Tab>
+</Tabs>
+
+## Transform properties
+
+Motion components support individual transform properties for fine-grained control:
+
+```typescript
+interface TransformProperties {
+  x?: string | number
+  y?: string | number
+  z?: string | number
+  translateX?: string | number
+  translateY?: string | number
+  translateZ?: string | number
+  rotate?: string | number
+  rotateX?: string | number
+  rotateY?: string | number
+  rotateZ?: string | number
+  scale?: string | number
+  scaleX?: string | number
+  scaleY?: string | number
+  scaleZ?: string | number
+  skew?: string | number
+  skewX?: string | number
+  skewY?: string | number
+  originX?: string | number
+  originY?: string | number
+  originZ?: string | number
+  perspective?: string | number
+  transformPerspective?: string | number
+}
+```
+
+```svelte
+<Motion.div
+  animate={{
+    x: 100,
+    rotate: 180,
+    scale: 1.5
+  }}
+  transition={{ duration: 1 }}
+>
+  Independent transforms
+</Motion.div>
+```
+
+## SVG path properties
+
+For SVG path elements, Motion Start supports animating path-specific properties:
+
+```typescript
+interface SVGPathProperties {
+  pathLength?: number
+  pathOffset?: number
+  pathSpacing?: number
+}
+```
+
+```svelte
+<Motion.svg viewBox="0 0 100 100">
+  <Motion.path
+    d="M 0 50 L 100 50"
+    stroke="#000"
+    strokeWidth="2"
+    initial={{ pathLength: 0 }}
+    animate={{ pathLength: 1 }}
+    transition={{ duration: 2 }}
+  />
+</Motion.svg>
+```
+
+## Advanced: Custom transform template
+
+You can customize the order and format of transforms using `transformTemplate`:
+
+```typescript
+interface MotionProps {
+  /**
+   * Customize the transform order or append/prepend to the generated transform
+   */
+  transformTemplate?(transform: TransformProperties, generatedTransform: string): string
+}
+```
+
+```svelte
+<Motion.div
+  style={{ x: 0, rotate: 180 }}
+  transformTemplate={({ x, rotate }) => 
+    `rotate(${rotate}deg) translateX(${x}px)`
+  }
+>
+  Custom transform order
+</Motion.div>
+```
+
+<Warning>
+By default, Motion Start applies transforms in an optimized order. Only use `transformTemplate` when you need specific transform ordering for your use case.
+</Warning>
+
+## Creating motion components programmatically
+
+For environments without Proxy support, you can create motion components explicitly:
+
+```typescript
+import { createDomMotionComponent } from 'motion-start'
+
+const MotionDiv = createDomMotionComponent('div')
+const MotionSpan = createDomMotionComponent('span')
+```
+
+## Type safety
+
+Motion components are fully typed, preserving the type information of the underlying HTML/SVG element:
+
+```typescript
+// TypeScript knows this is an HTMLDivElement with motion props
+<Motion.div
+  // Standard div props
+  className="container"
+  onClick={(e) => console.log(e)}
+  
+  // Motion props  
+  animate={{ opacity: 1 }}
+/>
+
+// TypeScript knows this is an SVGCircleElement
+<Motion.circle
+  cx={50}
+  cy={50}
+  r={30}
+  animate={{ r: 40 }}
+/>
+```
+
+## Component reference binding
+
+You can bind to the underlying DOM element using the `el` prop:
+
+```svelte
+<script>
+  import { Motion } from 'motion-start'
+  
+  let divElement: HTMLDivElement
+  
+  function handleClick() {
+    console.log(divElement.offsetWidth)
+  }
+</script>
+
+<Motion.div
+  bind:el={divElement}
+  animate={{ x: 100 }}
+  on:click={handleClick}
+>
+  Click me
+</Motion.div>
+```
+
+## Best practices
+
+<Accordion title="Choose the right variant">
+  Use `Motion`/`motion` when you need gestures (drag, tap, pan) or layout animations. Use `M`/`m` for animation-only use cases to reduce bundle size.
+</Accordion>
+
+<Accordion title="Reuse motion values">
+  When multiple components share animation state, create `MotionValue`s once and pass them to multiple components via the `style` prop.
+</Accordion>
+
+<Accordion title="Optimize for performance">
+  Animate transform properties (`x`, `y`, `scale`, `rotate`) and `opacity` for GPU-accelerated animations. Avoid animating layout properties like `width`, `height`, or `margin`.
+</Accordion>
+
+<Accordion title="SVG detection is automatic">
+  The motion factory automatically detects SVG elements by tag name. You don't need to pass `isSVG` prop unless you're using custom components.
+</Accordion>

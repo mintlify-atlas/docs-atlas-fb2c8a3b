@@ -1,0 +1,208 @@
+---
+title: Installation
+description: Install Motion Start in your Svelte project using your preferred package manager.
+---
+
+## Install the package
+
+Install Motion Start using your preferred package manager:
+
+<CodeGroup>
+
+```bash npm
+npm install motion-start
+```
+
+```bash pnpm
+pnpm add motion-start
+```
+
+```bash yarn
+yarn add motion-start
+```
+
+```bash bun
+bun add motion-start
+```
+
+</CodeGroup>
+
+## Peer dependencies
+
+Motion Start requires Svelte 5 as a peer dependency. Make sure you have the correct version installed:
+
+<Note>
+  Motion Start requires **Svelte ^5.33.16** or higher.
+</Note>
+
+If you need to install or upgrade Svelte:
+
+<CodeGroup>
+
+```bash npm
+npm install svelte@^5.33.16
+```
+
+```bash pnpm
+pnpm add svelte@^5.33.16
+```
+
+```bash yarn
+yarn add svelte@^5.33.16
+```
+
+```bash bun
+bun add svelte@^5.33.16
+```
+
+</CodeGroup>
+
+## TypeScript support
+
+Motion Start is written in TypeScript and includes complete type definitions out of the box. No additional installation is required.
+
+The package exports all types you need for working with animations:
+
+```typescript
+import type {
+  MotionProps,
+  AnimationControls,
+  Transition,
+  Variant,
+  Spring,
+  Tween,
+} from "motion-start";
+```
+
+## Core dependencies
+
+Motion Start automatically installs these animation primitives:
+
+- **framesync** (^6.1.2) - Frame synchronization for smooth animations
+- **popmotion** (^11.0.5) - Low-level animation functions and physics
+- **style-value-types** (5.1.2) - Value type detection and conversion
+
+You don't need to install these separately.
+
+## Import from Motion Start
+
+Once installed, you can import components and utilities from the main package:
+
+### Components
+
+```typescript
+import { Motion, AnimatePresence, MotionConfig, LazyMotion } from "motion-start";
+```
+
+The `Motion` component provides access to animated versions of all HTML and SVG elements:
+
+```svelte
+<Motion.div>Animated div</Motion.div>
+<Motion.button>Animated button</Motion.button>
+<Motion.svg>Animated SVG</Motion.svg>
+```
+
+### Motion values
+
+```typescript
+import {
+  useMotionValue,
+  useTransform,
+  useSpring,
+  useVelocity,
+  useMotionTemplate,
+} from "motion-start";
+```
+
+### Animation utilities
+
+```typescript
+import {
+  animate,
+  useAnimation,
+  animationControls,
+} from "motion-start";
+```
+
+### Scroll utilities
+
+```typescript
+import {
+  useViewportScroll,
+  useElementScroll,
+} from "motion-start";
+```
+
+### Gesture utilities
+
+```typescript
+import {
+  useDragControls,
+  usePresence,
+} from "motion-start";
+```
+
+### Types
+
+```typescript
+import type {
+  MotionProps,
+  AnimationControls,
+  Transition,
+  Variant,
+  Variants,
+  Target,
+  Spring,
+  Tween,
+  Easing,
+  PanInfo,
+  DragHandlers,
+  TapHandlers,
+  HoverHandlers,
+} from "motion-start";
+```
+
+## Minimal bundle
+
+For a smaller bundle size, you can use the minimal `m` component instead of `Motion`:
+
+```typescript
+import { m } from "motion-start";
+```
+
+The `m` component has the same API but with a reduced feature set. Use it with `LazyMotion` to load features on demand:
+
+```svelte
+<script>
+  import { LazyMotion, m } from "motion-start";
+  import { featureBundle } from "motion-start";
+</script>
+
+<LazyMotion features={featureBundle}>
+  <m.div animate={{ x: 100 }} />
+</LazyMotion>
+```
+
+## Verify installation
+
+Create a simple test file to verify Motion Start is working:
+
+```svelte title="src/routes/+page.svelte"
+<script>
+  import { Motion } from "motion-start";
+</script>
+
+<Motion.div
+  animate={{ rotate: 360 }}
+  transition={{ duration: 2, repeat: Infinity }}
+  style="width: 100px; height: 100px; background: blue;"
+/>
+```
+
+If you see a rotating blue square, Motion Start is installed correctly!
+
+## Next steps
+
+<Card title="Quickstart" icon="rocket" href="/quickstart">
+  Create your first animation with Motion Start
+</Card>

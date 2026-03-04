@@ -1,80 +1,337 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Create your first animation with Motion Start in minutes. Learn the basics of animating elements, handling gestures, and using spring physics.
 ---
 
-## Get started in three steps
+This guide will walk you through creating your first animations with Motion Start. You'll learn how to animate elements, respond to user interactions, and create smooth spring-based animations.
 
-Get your documentation site running locally and make your first customization.
+## Prerequisites
 
-### Step 1: Set up your local environment
+Before you begin, make sure you have:
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+- A Svelte 5 project set up
+- Motion Start installed (see [Installation](/installation))
 
-### Step 2: Deploy your changes
+## Your first animation
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+<Steps>
+  <Step title="Import Motion component">
+    First, import the `Motion` component from Motion Start:
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+    ```svelte title="src/routes/+page.svelte"
+    <script>
+      import { Motion } from "motion-start";
+    </script>
+    ```
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    The `Motion` component provides access to animated versions of all HTML elements through a proxy (e.g., `Motion.div`, `Motion.button`).
+  </Step>
 
-### Step 3: Go live
+  <Step title="Create an animated element">
+    Use `Motion.div` to create an animated element with the `animate` prop:
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+    ```svelte title="src/routes/+page.svelte"
+    <script>
+      import { Motion } from "motion-start";
+    </script>
+
+    <Motion.div
+      animate={{
+        rotate: 360,
+      }}
+      transition={{
+        duration: 2,
+      }}
+      class="box"
+    >
+      Watch me spin!
+    </Motion.div>
+
+    <style>
+      .box {
+        width: 150px;
+        height: 150px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+      }
+    </style>
+    ```
+
+    This creates a rotating box that animates to 360 degrees over 2 seconds.
+  </Step>
+
+  <Step title="Add interactive gestures">
+    Make your animation interactive with gesture props like `whileHover` and `whileTap`:
+
+    ```svelte title="src/routes/+page.svelte"
+    <script>
+      import { Motion } from "motion-start";
+    </script>
+
+    <Motion.div
+      whileHover={{
+        scale: 0.86,
+      }}
+      whileTap={{
+        scale: 0.9,
+        rotate: 45,
+      }}
+      class="box"
+    >
+      Hover and click me!
+    </Motion.div>
+
+    <style>
+      .box {
+        width: 150px;
+        height: 150px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+      }
+    </style>
+    ```
+
+    <Info>
+      The element automatically animates back to its original state when you stop hovering or release the click.
+    </Info>
+  </Step>
+
+  <Step title="Use spring physics">
+    Replace the default tween animation with spring physics for more natural motion:
+
+    ```svelte title="src/routes/+page.svelte"
+    <script>
+      import { Motion } from "motion-start";
+    </script>
+
+    <Motion.div
+      animate={{
+        rotate: 180,
+      }}
+      transition={{
+        type: "spring",
+        damping: 10,
+        mass: 0.75,
+        stiffness: 100,
+      }}
+      class="box"
+    >
+      Spring animation!
+    </Motion.div>
+
+    <style>
+      .box {
+        width: 150px;
+        height: 150px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+      }
+    </style>
+    ```
+
+    Spring parameters:
+    - **type**: Set to `"spring"` to use spring physics
+    - **damping**: Controls the friction (lower = more bouncy)
+    - **mass**: The mass of the object (affects momentum)
+    - **stiffness**: The spring strength (higher = faster)
+  </Step>
+</Steps>
+
+## Complete example
+
+Here's a complete example combining multiple concepts:
+
+```svelte title="src/routes/+page.svelte"
+<script>
+  import { Motion } from "motion-start";
+  let count = 0;
+</script>
+
+<div class="container">
+  <h1>Motion Start Demo</h1>
+  
+  <div class="boxes">
+    <!-- Tween animation -->
+    {#key count}
+      <Motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 2 }}
+        class="box"
+      >
+        Tween
+      </Motion.div>
+    {/key}
+
+    <!-- Spring animation -->
+    {#key count}
+      <Motion.div
+        animate={{ rotate: 180 }}
+        transition={{
+          type: "spring",
+          damping: 10,
+          mass: 0.75,
+          stiffness: 100,
+        }}
+        class="box"
+      >
+        Spring
+      </Motion.div>
+    {/key}
+
+    <!-- Interactive gestures -->
+    <Motion.div
+      whileHover={{ scale: 0.8, rotate: 45 }}
+      whileTap={{ scale: 0.9 }}
+      class="box"
+    >
+      Interactive
+    </Motion.div>
+  </div>
+
+  <button onclick={() => count++}>
+    Restart animations
+  </button>
+</div>
+
+<style>
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  h1 {
+    margin-bottom: 2rem;
+  }
+
+  .boxes {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .box {
+    width: 150px;
+    height: 150px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  button {
+    padding: 0.75rem 1.5rem;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  button:hover {
+    background: #764ba2;
+  }
+</style>
+```
+
+## Result
+
+You should now see three animated boxes:
+
+1. **Tween**: Rotates 360° with a linear duration-based animation
+2. **Spring**: Rotates 180° with physics-based spring animation
+3. **Interactive**: Scales and rotates on hover and tap
+
+Clicking "Restart animations" re-triggers the animations using Svelte's `{#key}` block.
+
+## Key concepts
+
+Here's what you've learned:
+
+<CardGroup cols={2}>
+  <Card title="Motion component" icon="box">
+    Access animated versions of HTML elements via `Motion.div`, `Motion.button`, etc.
+  </Card>
+  <Card title="Animate prop" icon="wand-magic-sparkles">
+    Define the target state with the `animate` prop - Motion Start handles the rest
+  </Card>
+  <Card title="Transition prop" icon="clock">
+    Control how animations behave with `duration`, `type`, and spring parameters
+  </Card>
+  <Card title="Gesture props" icon="hand-pointer">
+    Create interactive animations with `whileHover`, `whileTap`, and `whileDrag`
+  </Card>
+</CardGroup>
+
+## Animation types
+
+Motion Start supports two main animation types:
+
+### Tween (duration-based)
+
+```typescript
+transition: {
+  duration: 2,        // Animation duration in seconds
+  ease: "easeInOut",  // Easing function
+  delay: 0.5,         // Delay before starting
+}
+```
+
+### Spring (physics-based)
+
+```typescript
+transition: {
+  type: "spring",
+  stiffness: 100,     // Spring strength
+  damping: 10,        // Friction/resistance
+  mass: 0.75,         // Object mass
+}
+```
+
+<Tip>
+  Spring animations feel more natural for interactive UI elements. Use tween animations when you need precise timing control.
+</Tip>
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
+Now that you understand the basics, explore more advanced features:
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Motion values" icon="chart-line" href="/concepts/motion-values">
+    Track and transform animated values
+  </Card>
+  <Card title="Gestures" icon="hand-pointer" href="/concepts/gestures">
+    Learn about drag, pan, and other gestures
+  </Card>
+  <Card title="AnimatePresence" icon="eye" href="/guides/animate-presence">
+    Animate components entering and exiting
+  </Card>
+  <Card title="Scroll animations" icon="arrows-up-down" href="/guides/scroll-animations">
+    Create scroll-linked animations
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

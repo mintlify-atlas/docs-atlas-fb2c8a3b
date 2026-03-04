@@ -1,0 +1,223 @@
+---
+title: useSpring
+description: Create a MotionValue that animates to its target with a spring.
+---
+
+`useSpring` creates a `MotionValue` that, when `set`, will use a spring animation to animate to its new state. It can either work as a stand-alone `MotionValue` by initializing it with a value, or as a subscriber to another `MotionValue`.
+
+## Import
+
+```typescript
+import { useSpring } from 'motion-start'
+```
+
+## Usage
+
+Create a spring-animated motion value:
+
+```svelte
+<script>
+  import { Motion, useSpring } from 'motion-start'
+  
+  const x = useSpring(0, { stiffness: 300, damping: 20 })
+  
+  function moveRight() {
+    x.set(100)
+  }
+</script>
+
+<button on:click={moveRight}>Move</button>
+
+<Motion let:motion style={{ x }}>
+  <div use:motion />
+</Motion>
+```
+
+## Signature
+
+```typescript
+function useSpring(
+  source: MotionValue<number> | number,
+  config?: SpringOptions,
+  isCustom?: boolean
+): MotionValue<number> & {
+  reset: (source: MotionValue<number> | number, config: SpringOptions) => void
+}
+```
+
+<ParamField path="source" type="MotionValue<number> | number" required>
+  A `MotionValue` or number. If provided a `MotionValue`, when the input `MotionValue` changes, the created `MotionValue` will spring towards that value.
+</ParamField>
+
+<ParamField path="config" type="SpringOptions" default="{}">
+  Configuration options for the spring animation.
+</ParamField>
+
+<ParamField path="isCustom" type="boolean" default="false">
+  Internal flag for custom context handling.
+</ParamField>
+
+<ResponseField name="MotionValue" type="MotionValue<number>">
+  A `MotionValue` that animates with spring physics when updated.
+</ResponseField>
+
+## Spring options
+
+### `SpringOptions`
+
+```typescript
+interface SpringOptions {
+  stiffness?: number
+  damping?: number
+  mass?: number
+  velocity?: number
+  restSpeed?: number
+  restDelta?: number
+}
+```
+
+<ParamField path="stiffness" type="number" default="100">
+  Spring stiffness. Higher values create more rigid springs.
+</ParamField>
+
+<ParamField path="damping" type="number" default="10">
+  Strength of opposing force. Higher values reduce oscillation.
+</ParamField>
+
+<ParamField path="mass" type="number" default="1">
+  Mass of the moving object. Higher values increase inertia.
+</ParamField>
+
+<ParamField path="velocity" type="number" default="0">
+  Initial velocity of the spring.
+</ParamField>
+
+<ParamField path="restSpeed" type="number" default="0.01">
+  End animation if absolute speed drops below this value.
+</ParamField>
+
+<ParamField path="restDelta" type="number" default="0.01">
+  End animation if distance to target is below this value.
+</ParamField>
+
+## Examples
+
+### Stand-alone spring
+
+```svelte
+<script>
+  import { Motion, useSpring } from 'motion-start'
+  
+  const x = useSpring(0, { stiffness: 300 })
+</script>
+
+<Motion let:motion style={{ x }}>
+  <div use:motion />
+</Motion>
+```
+
+### Spring following another value
+
+Create a spring that follows another `MotionValue`:
+
+```svelte
+<script>
+  import { Motion, useMotionValue, useSpring } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  const springX = useSpring(x, { damping: 10 })
+  
+  // When x changes, springX will spring to match it
+  function handleClick() {
+    x.set(100)
+  }
+</script>
+
+<button on:click={handleClick}>Animate</button>
+
+<Motion let:motion style={{ x: springX }}>
+  <div use:motion />
+</Motion>
+```
+
+### Configuring spring physics
+
+```svelte
+<script>
+  import { useSpring } from 'motion-start'
+  
+  // Bouncy spring
+  const bouncy = useSpring(0, {
+    stiffness: 400,
+    damping: 10
+  })
+  
+  // Smooth spring
+  const smooth = useSpring(0, {
+    stiffness: 100,
+    damping: 30
+  })
+  
+  // Slow spring
+  const slow = useSpring(0, {
+    stiffness: 50,
+    damping: 20,
+    mass: 2
+  })
+</script>
+```
+
+### Chaining springs
+
+You can chain springs for interesting effects:
+
+```svelte
+<script>
+  import { Motion, useMotionValue, useSpring } from 'motion-start'
+  
+  const x = useMotionValue(0)
+  const springX = useSpring(x, { stiffness: 300, damping: 20 })
+  const springSpringX = useSpring(springX, { stiffness: 200, damping: 30 })
+</script>
+
+<Motion let:motion style={{ x: springSpringX }}>
+  <div use:motion />
+</Motion>
+```
+
+### Mouse following
+
+```svelte
+<script>
+  import { Motion, useMotionValue, useSpring } from 'motion-start'
+  
+  const mouseX = useMotionValue(0)
+  const mouseY = useMotionValue(0)
+  
+  const springX = useSpring(mouseX, { stiffness: 150, damping: 25 })
+  const springY = useSpring(mouseY, { stiffness: 150, damping: 25 })
+  
+  function handleMouseMove(event) {
+    mouseX.set(event.clientX)
+    mouseY.set(event.clientY)
+  }
+</script>
+
+<svelte:window on:mousemove={handleMouseMove} />
+
+<Motion let:motion style={{ x: springX, y: springY }}>
+  <div use:motion class="cursor" />
+</Motion>
+```
+
+## Notes
+
+- When the motion config context has `isStatic` set to `true`, springs will update immediately without animation.
+- The spring animation uses the current velocity of the motion value to create smooth transitions.
+- Springs are particularly useful for creating natural-feeling interactions and physics-based animations.
+
+## Related
+
+- [useMotionValue](/api/use-motion-value)
+- [useTransform](/api/use-transform)
+- [useVelocity](/api/use-velocity)

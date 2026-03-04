@@ -1,0 +1,479 @@
+---
+title: Spring animations
+description: Create natural, physics-based animations with spring transitions and useSpring
+---
+
+Spring animations create natural-feeling motion by simulating spring physics. Motion Start uses spring animations by default for many properties and provides tools to create custom spring-based motion values.
+
+## Default spring animations
+
+Motion Start automatically uses spring animations for transform properties:
+
+```svelte
+<script>
+  import { MotionDiv } from 'motion-start';
+  
+  let isActive = $state(false);
+</script>
+
+<MotionDiv
+  animate={{ scale: isActive ? 1.2 : 1 }}
+  onclick={() => isActive = !isActive}
+  style="
+    width: 100px;
+    height: 100px;
+    background: #0088ff;
+    border-radius: 8px;
+    cursor: pointer;
+  "
+>
+  Click me
+</MotionDiv>
+```
+
+<Note>
+The scale animation automatically uses a spring transition, creating a natural bouncy effect.
+</Note>
+
+## Spring physics parameters
+
+Customize spring behavior with these parameters:
+
+<ParamField path="stiffness" type="number" default={100}>
+  Spring stiffness. Higher values create faster, snappier animations.
+</ParamField>
+
+<ParamField path="damping" type="number" default={10}>
+  Strength of opposing force. Lower values create more oscillation.
+</ParamField>
+
+<ParamField path="mass" type="number" default={1.0}>
+  Mass of the moving object. Higher values create slower animations with more momentum.
+</ParamField>
+
+<ParamField path="restSpeed" type="number" default={0.01}>
+  Speed at which the animation is considered complete.
+</ParamField>
+
+<ParamField path="restDelta" type="number" default={0.01}>
+  Distance from target at which the animation is considered complete.
+</ParamField>
+
+## Custom spring transitions
+
+Define custom spring parameters in the `transition` prop:
+
+```svelte
+<script>
+  import { MotionDiv } from 'motion-start';
+  
+  let position = $state(0);
+</script>
+
+<button onclick={() => position = position === 0 ? 200 : 0}>
+  Toggle
+</button>
+
+<MotionDiv
+  animate={{ x: position }}
+  transition={{
+    type: 'spring',
+    stiffness: 300,
+    damping: 20
+  }}
+  style="
+    width: 80px;
+    height: 80px;
+    background: #ff0088;
+    border-radius: 8px;
+  "
+/>
+```
+
+## Default spring presets
+
+Motion Start uses different spring presets for different properties:
+
+<Accordion title="Under-damped spring (default for transforms)">
+  Used for `x`, `y`, `z`, and rotation properties:
+  
+  ```javascript
+  {
+    type: 'spring',
+    stiffness: 500,
+    damping: 25,
+    restDelta: 0.5,
+    restSpeed: 10
+  }
+  ```
+  
+  Creates a bouncy, natural-feeling animation.
+  
+  Source: [default-transitions.ts:13
+</Accordion>
+
+<Accordion title="Critically-damped spring (for scale)">
+  Used for `scale`, `scaleX`, and `scaleY` properties:
+  
+  ```javascript
+  {
+    type: 'spring',
+    stiffness: 550,
+    damping: 30,  // or 2 * sqrt(550) when animating to 0
+    restDelta: 0.01,
+    restSpeed: 10
+  }
+  ```
+  
+  Creates a smooth animation with minimal oscillation.
+  
+  Source: [default-transitions.ts:20
+</Accordion>
+
+## Spring stiffness comparison
+
+Different stiffness values create dramatically different effects:
+
+```svelte
+<script>
+  import { MotionDiv } from 'motion-start';
+  
+  let trigger = $state(false);
+  
+  const springs = [
+    { stiffness: 50, label: 'Soft' },
+    { stiffness: 200, label: 'Medium' },
+    { stiffness: 500, label: 'Stiff' },
+    { stiffness: 1000, label: 'Very Stiff' }
+  ];
+</script>
+
+<button onclick={() => trigger = !trigger}>
+  Animate
+</button>
+
+<div style="display: flex; flex-direction: column; gap: 20px; margin-top: 20px;">
+  {#each springs as spring}
+    <div>
+      <span style="display: inline-block; width: 100px;">{spring.label}</span>
+      <MotionDiv
+        animate={{ x: trigger ? 200 : 0 }}
+        transition={{ type: 'spring', stiffness: spring.stiffness, damping: 20 }}
+        style="
+          display: inline-block;
+          width: 60px;
+          height: 60px;
+          background: #0088ff;
+          border-radius: 8px;
+        "
+      />
+    </div>
+  {/each}
+</div>
+```
+
+## Spring damping comparison
+
+Damping controls oscillation:
+
+```svelte
+<script>
+  import { MotionDiv } from 'motion-start';
+  
+  let trigger = $state(false);
+  
+  const dampings = [
+    { damping: 5, label: 'Bouncy (5)' },
+    { damping: 15, label: 'Medium (15)' },
+    { damping: 30, label: 'Smooth (30)' },
+    { damping: 50, label: 'Overdamped (50)' }
+  ];
+</script>
+
+<button onclick={() => trigger = !trigger}>
+  Animate
+</button>
+
+<div style="display: flex; flex-direction: column; gap: 20px; margin-top: 20px;">
+  {#each dampings as config}
+    <div>
+      <span style="display: inline-block; width: 150px;">{config.label}</span>
+      <MotionDiv
+        animate={{ x: trigger ? 200 : 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: config.damping }}
+        style="
+          display: inline-block;
+          width: 60px;
+          height: 60px;
+          background: #ff0088;
+          border-radius: 8px;
+        "
+      />
+    </div>
+  {/each}
+</div>
+```
+
+<Info>
+Lower damping values (5-10) create bouncy animations with multiple oscillations. Higher values (30+) create smooth, direct motion.
+</Info>
+
+## The useSpring hook
+
+Create a `MotionValue` that springs toward its target:
+
+```svelte
+<script>
+  import { useSpring, MotionDiv } from 'motion-start';
+  
+  const springValue = useSpring(0, { stiffness: 300, damping: 20 });
+  
+  function updateValue() {
+    springValue.set(Math.random() * 200);
+  }
+</script>
+
+<button onclick={updateValue}>
+  Random position
+</button>
+
+<MotionDiv
+  style="
+    width: 80px;
+    height: 80px;
+    background: #00ff88;
+    border-radius: 8px;
+  "
+  style:x={springValue}
+/>
+```
+
+Source: [use-spring.ts:40
+
+## Spring from another MotionValue
+
+`useSpring` can track another `MotionValue`, creating a spring that follows it:
+
+```svelte
+<script>
+  import { useSpring, useMotionValue, MotionDiv } from 'motion-start';
+  
+  const x = useMotionValue(0);
+  const springX = useSpring(x, { stiffness: 100, damping: 15 });
+  
+  function moveLeader() {
+    x.set(Math.random() * 200);
+  }
+</script>
+
+<button onclick={moveLeader}>
+  Move leader
+</button>
+
+<div style="position: relative; height: 150px;">
+  <!-- Leader (instant) -->
+  <MotionDiv
+    style="
+      width: 60px;
+      height: 60px;
+      background: #0088ff;
+      border-radius: 8px;
+      position: absolute;
+    "
+    style:x
+  />
+  
+  <!-- Follower (spring) -->
+  <MotionDiv
+    style="
+      width: 60px;
+      height: 60px;
+      background: rgba(0, 136, 255, 0.3);
+      border-radius: 8px;
+      position: absolute;
+      top: 80px;
+    "
+    style:x={springX}
+  />
+</div>
+```
+
+<Note>
+When `useSpring` receives a `MotionValue`, it automatically subscribes to changes and springs toward the new values.
+
+Source: [use-spring.ts:70
+</Note>
+
+## Spring with velocity
+
+Springs automatically incorporate the current velocity of the motion value:
+
+```svelte
+<script>
+  import { useSpring, MotionDiv } from 'motion-start';
+  
+  const x = useSpring(0, { stiffness: 200, damping: 15 });
+  
+  function rapidChanges() {
+    // Rapid successive updates build velocity
+    x.set(50);
+    setTimeout(() => x.set(150), 100);
+    setTimeout(() => x.set(100), 200);
+  }
+</script>
+
+<button onclick={rapidChanges}>
+  Trigger rapid changes
+</button>
+
+<MotionDiv
+  style="
+    width: 80px;
+    height: 80px;
+    background: #ff0088;
+    border-radius: 8px;
+  "
+  style:x
+/>
+```
+
+The spring animation incorporates velocity automatically, making transitions feel natural even when targets change mid-animation.
+
+Source: [use-spring.ts:62
+
+## Spring animation lifecycle
+
+Here's how spring animations work internally:
+
+<Steps>
+  <Step title="Set target value">
+    When you call `springValue.set(newValue)`, the new value becomes the target.
+  </Step>
+  
+  <Step title="Check for static mode">
+    If the `MotionConfig` is set to static mode, the value updates instantly without animation.
+    
+    Source: [use-spring.ts:53
+  </Step>
+  
+  <Step title="Start spring animation">
+    A spring animation starts from the current value, using the current velocity, and springs toward the target.
+    
+    Source: [use-spring.ts:59
+  </Step>
+  
+  <Step title="Update on each frame">
+    The animation updates the value on each frame based on spring physics until it reaches the target within `restDelta` and `restSpeed` thresholds.
+  </Step>
+</Steps>
+
+## Choosing spring parameters
+
+Use this guide to choose the right spring parameters:
+
+<Accordion title="For UI elements (buttons, cards)">
+  Use high stiffness and medium damping for snappy, responsive feel:
+  
+  ```javascript
+  { stiffness: 400, damping: 25 }
+  ```
+</Accordion>
+
+<Accordion title="For smooth, fluid motion">
+  Use medium stiffness and higher damping:
+  
+  ```javascript
+  { stiffness: 200, damping: 30 }
+  ```
+</Accordion>
+
+<Accordion title="For bouncy, playful animations">
+  Use high stiffness and low damping:
+  
+  ```javascript
+  { stiffness: 500, damping: 15 }
+  ```
+</Accordion>
+
+<Accordion title="For gentle, organic motion">
+  Use low stiffness and medium damping:
+  
+  ```javascript
+  { stiffness: 100, damping: 20 }
+  ```
+</Accordion>
+
+## Spring vs tween animations
+
+Spring animations differ from tween animations:
+
+| Spring | Tween |
+|--------|-------|
+| Physics-based | Time-based |
+| No fixed duration | Fixed duration |
+| Naturally handles interruptions | May feel abrupt when interrupted |
+| Velocity-aware | Restarts from current position |
+| Feels organic | Feels mechanical |
+
+<Warning>
+Spring animations don't have a fixed duration. They complete when the value reaches the target within the `restDelta` and `restSpeed` thresholds. If you need precise timing, use a tween transition instead.
+</Warning>
+
+## Complete example: Spring playground
+
+```svelte
+<script>
+  import { MotionDiv } from 'motion-start';
+  
+  let stiffness = $state(300);
+  let damping = $state(20);
+  let mass = $state(1);
+  let x = $state(0);
+</script>
+
+<div style="padding: 20px;">
+  <div style="margin-bottom: 20px;">
+    <label>
+      Stiffness: {stiffness}
+      <input type="range" bind:value={stiffness} min="10" max="1000" />
+    </label>
+  </div>
+  
+  <div style="margin-bottom: 20px;">
+    <label>
+      Damping: {damping}
+      <input type="range" bind:value={damping} min="1" max="100" />
+    </label>
+  </div>
+  
+  <div style="margin-bottom: 20px;">
+    <label>
+      Mass: {mass}
+      <input type="range" bind:value={mass} min="0.1" max="5" step="0.1" />
+    </label>
+  </div>
+  
+  <button onclick={() => x = x === 0 ? 300 : 0}>
+    Animate
+  </button>
+  
+  <div style="margin-top: 40px; height: 100px; position: relative;">
+    <MotionDiv
+      animate={{ x }}
+      transition={{ 
+        type: 'spring', 
+        stiffness: Number(stiffness),
+        damping: Number(damping),
+        mass: Number(mass)
+      }}
+      style="
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #0088ff, #00ff88);
+        border-radius: 16px;
+        position: absolute;
+      "
+    />
+  </div>
+</div>
+```

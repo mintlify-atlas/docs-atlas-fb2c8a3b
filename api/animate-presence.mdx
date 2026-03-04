@@ -1,0 +1,276 @@
+---
+title: AnimatePresence
+description: Enable exit animations for components removed from the tree
+---
+
+`AnimatePresence` enables the animation of components that have been removed from the tree. Any `motion` components that have an `exit` property defined will animate out when removed.
+
+## Import
+
+```javascript
+import { AnimatePresence } from 'motion-start'
+```
+
+## Usage
+
+You can provide an array to the `list` prop, where each item must have a unique `key` attribute. Via the slot prop `item`, single items of the array are passed down to children, so that for each array item one component is rendered.
+
+Alternatively, you can leave `list` undefined and supply a boolean to the `show` prop. If `true`, the child is rendered.
+
+### With show prop
+
+```svelte
+<script>
+  import { motion, AnimatePresence } from 'motion-start'
+  let isVisible = $state(true)
+</script>
+
+<AnimatePresence show={isVisible}>
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+  >
+    Hello World
+  </motion.div>
+</AnimatePresence>
+```
+
+### With list prop
+
+```svelte
+<script>
+  import { motion, AnimatePresence } from 'motion-start'
+  
+  const items = [
+    { key: 1, text: 'Item 1' },
+    { key: 2, text: 'Item 2' },
+    { key: 3, text: 'Item 3' }
+  ]
+</script>
+
+<AnimatePresence list={items}>
+  {#snippet children({ item })}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      {item.text}
+    </motion.div>
+  {/snippet}
+</AnimatePresence>
+```
+
+## Props
+
+<ParamField path="show" type="boolean">
+  Render the child when this is set to `true`, exit it when changed to `false`.
+  
+  Only used when `list` is undefined.
+
+  ```svelte
+  <AnimatePresence show={isVisible}>
+    <motion.div exit={{ opacity: 0 }} />
+  </AnimatePresence>
+  ```
+</ParamField>
+
+<ParamField path="list" type="T[]">
+  The data array for the items you want to render. Every item needs a unique `key` property.
+  
+  Alternatively, you can leave this undefined and supply the `show` prop.
+
+  ```svelte
+  <script>
+    const items = [
+      { key: 1, name: 'Apple' },
+      { key: 2, name: 'Banana' }
+    ]
+  </script>
+
+  <AnimatePresence list={items}>
+    {#snippet children({ item })}
+      <motion.div exit={{ opacity: 0 }}>
+        {item.name}
+      </motion.div>
+    {/snippet}
+  </AnimatePresence>
+  ```
+</ParamField>
+
+<ParamField path="initial" type="boolean" default="true">
+  By passing `initial={false}`, `AnimatePresence` will disable any initial animations on children that are present when the component is first rendered.
+
+  ```svelte
+  <AnimatePresence initial={false} show={isVisible}>
+    <motion.div
+      key="modal"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    />
+  </AnimatePresence>
+  ```
+</ParamField>
+
+<ParamField path="exitBeforeEnter" type="boolean">
+  If set to `true`, `AnimatePresence` will only render one component at a time. The exiting component will finish its exit animation before the entering component is rendered.
+
+  ```svelte
+  <script>
+    let currentItem = $state(0)
+  </script>
+
+  <AnimatePresence exitBeforeEnter>
+    <motion.div key={currentItem} exit={{ opacity: 0 }} />
+  </AnimatePresence>
+  ```
+
+  <Note>
+    This prop is marked as beta in the source code.
+  </Note>
+</ParamField>
+
+<ParamField path="custom" type="any">
+  When a component is removed, there's no longer a chance to update its props. So if a component's `exit` prop is defined as a dynamic variant and you want to pass a new `custom` prop, you can do so via `AnimatePresence`. This will ensure all leaving components animate using the latest data.
+
+  ```svelte
+  <AnimatePresence custom={direction}>
+    <motion.div
+      key={page}
+      custom={direction}
+      variants={pageVariants}
+      exit="exit"
+    />
+  </AnimatePresence>
+  ```
+</ParamField>
+
+<ParamField path="onExitComplete" type="() => void">
+  Fires when all exiting nodes have completed animating out.
+
+  ```svelte
+  <AnimatePresence onExitComplete={() => console.log('All items exited')}>
+    <!-- children -->
+  </AnimatePresence>
+  ```
+</ParamField>
+
+<ParamField path="presenceAffectsLayout" type="boolean" default="true">
+  Used in Framer to flag that sibling children *shouldn't* re-render as a result of a child being removed.
+
+  <Info>
+    This is an internal prop and typically shouldn't be used in application code.
+  </Info>
+</ParamField>
+
+## Types
+
+### AnimatePresenceProps
+
+```typescript
+interface AnimatePresenceProps<T extends {key: any}> {
+  /**
+   * By passing `initial={false}`, `AnimatePresence` will disable any initial 
+   * animations on children that are present when the component is first rendered.
+   */
+  initial?: boolean;
+  
+  /**
+   * When a component is removed, there's no longer a chance to update its props.
+   * So if a component's `exit` prop is defined as a dynamic variant and you want 
+   * to pass a new `custom` prop, you can do so via `AnimatePresence`.
+   */
+  custom?: any;
+  
+  /**
+   * Fires when all exiting nodes have completed animating out.
+   */
+  onExitComplete?: () => void;
+  
+  /**
+   * If set to `true`, `AnimatePresence` will only render one component at a time.
+   * The exiting component will finish its exit animation before the entering 
+   * component is rendered.
+   */
+  exitBeforeEnter?: boolean;
+  
+  /**
+   * Used in Framer to flag that sibling children *shouldn't* re-render as a 
+   * result of a child being removed.
+   */
+  presenceAffectsLayout?: boolean;
+  
+  /**
+   * The data array for the items you want to render. Every Item needs a unique `key`.
+   */
+  list?: T[];
+  
+  /**
+   * Render the child when this is set to `true`, exit it when changed to `false`.
+   * Only used when list is undefined.
+   */
+  show?: boolean;
+}
+```
+
+## Examples
+
+### Sequencing exit animations with variants
+
+You can sequence exit animations throughout a tree using variants:
+
+```svelte
+<script>
+  import { motion, AnimatePresence } from 'motion-start'
+  
+  const listVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        when: "beforeChildren",
+        staggerChildren: 0.1
+      }
+    },
+    exit: {
+      opacity: 0,
+      transition: {
+        when: "afterChildren"
+      }
+    }
+  }
+  
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -20 }
+  }
+  
+  let showList = $state(true)
+</script>
+
+<AnimatePresence show={showList}>
+  <motion.ul variants={listVariants} initial="hidden" animate="visible" exit="exit">
+    {#each items as item (item.key)}
+      <motion.li variants={itemVariants}>
+        {item.name}
+      </motion.li>
+    {/each}
+  </motion.ul>
+</AnimatePresence>
+```
+
+### Multiple motion components
+
+If a child contains multiple `motion` components with `exit` props, it will only unmount the child once all `motion` components have finished animating out.
+
+<Note>
+  `AnimatePresence` requires that all direct children have a unique `key` prop when using the `list` mode, or that you use the `show` prop for conditional rendering.
+</Note>
+
+## Related
+
+- [motion](/api/motion) - Create animated components
+- [AnimateSharedLayout](/api/animate-shared-layout) - Coordinate layout animations

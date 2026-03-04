@@ -1,0 +1,457 @@
+---
+title: Drag and drop
+description: Add drag gestures and constraints to create interactive draggable elements
+---
+
+Motion Start provides a comprehensive drag system that allows you to make any component draggable with constraints, momentum, and elastic bounds.
+
+## Basic dragging
+
+Make any element draggable by adding the `drag` prop:
+
+```svelte
+<script>
+  import { MotionDiv } from 'motion-start';
+</script>
+
+<MotionDiv
+  drag
+  style="
+    width: 100px;
+    height: 100px;
+    background: #0088ff;
+    border-radius: 8px;
+    cursor: grab;
+  "
+>
+  Drag me!
+</MotionDiv>
+```
+
+<Note>
+By default, `drag` enables dragging in both x and y directions. The element will return to its original position when released.
+</Note>
+
+## Directional dragging
+
+Constrain dragging to a single axis using `drag="x"` or `drag="y"`:
+
+```svelte
+<MotionDiv
+  drag="x"
+  style="
+    width: 100px;
+    height: 100px;
+    background: #ff0088;
+    border-radius: 8px;
+  "
+>
+  Drag horizontally
+</MotionDiv>
+
+<MotionDiv
+  drag="y"
+  style="
+    width: 100px;
+    height: 100px;
+    background: #00ff88;
+    border-radius: 8px;
+    margin-top: 20px;
+  "
+>
+  Drag vertically
+</MotionDiv>
+```
+
+Source: [types.ts:127
+
+## Drag constraints
+
+Use `dragConstraints` to limit the draggable area. You can specify constraints in pixels or use a ref to another element:
+
+```svelte
+<script>
+  import { MotionDiv } from 'motion-start';
+  
+  let constraintsRef = $state();
+</script>
+
+<!-- Constrain to pixel values -->
+<MotionDiv
+  drag
+  dragConstraints={{ left: 0, right: 300, top: 0, bottom: 300 }}
+  style="
+    width: 80px;
+    height: 80px;
+    background: #0088ff;
+    border-radius: 8px;
+  "
+>
+  Constrained
+</MotionDiv>
+
+<!-- Constrain to parent element -->
+<div bind:this={constraintsRef} style="width: 400px; height: 400px; background: #f0f0f0;">
+  <MotionDiv
+    drag
+    dragConstraints={constraintsRef}
+    style="
+      width: 80px;
+      height: 80px;
+      background: #ff0088;
+      border-radius: 8px;
+    "
+  >
+    Drag within gray box
+  </MotionDiv>
+</div>
+```
+
+Source: [types.ts:186
+
+<Info>
+When using a ref as constraints, the draggable element can move anywhere within the bounds of the referenced element.
+</Info>
+
+## Drag elasticity
+
+Control how much the element can move outside its constraints with `dragElastic`:
+
+```svelte
+<MotionDiv
+  drag
+  dragConstraints={{ left: 0, right: 200, top: 0, bottom: 200 }}
+  dragElastic={0.2}
+  style="
+    width: 80px;
+    height: 80px;
+    background: #0088ff;
+    border-radius: 8px;
+  "
+>
+  Elastic drag
+</MotionDiv>
+```
+
+<ParamField path="dragElastic" type="number | boolean | BoundingBox2D" default={0.5}>
+  The degree of movement allowed outside constraints:
+  - `0`: No movement outside constraints
+  - `1`: Full movement
+  - `false`: Disable elastic movement
+  - Object with `top`, `right`, `bottom`, `left` for per-side control
+</ParamField>
+
+Source: [types.ts:206
+
+## Drag momentum
+
+By default, drag gestures include momentum. Disable it with `dragMomentum={false}`:
+
+```svelte
+<MotionDiv
+  drag
+  dragMomentum={false}
+  style="
+    width: 100px;
+    height: 100px;
+    background: #00ff88;
+    border-radius: 8px;
+  "
+>
+  No momentum
+</MotionDiv>
+```
+
+Source: [types.ts:221
+
+## Customizing drag inertia
+
+Control the momentum physics with `dragTransition`:
+
+```svelte
+<MotionDiv
+  drag
+  dragConstraints={{ left: 0, right: 300, top: 0, bottom: 300 }}
+  dragTransition={{
+    bounceStiffness: 600,
+    bounceDamping: 10,
+    power: 0.3
+  }}
+  style="
+    width: 80px;
+    height: 80px;
+    background: #ff0088;
+    border-radius: 8px;
+  "
+>
+  Custom inertia
+</MotionDiv>
+```
+
+Source: [types.ts:236
+
+## Drag event handlers
+
+Respond to drag events with callback handlers:
+
+```svelte
+<script>
+  import { MotionDiv } from 'motion-start';
+  
+  function handleDragStart(event, info) {
+    console.log('Drag started', info.point);
+  }
+  
+  function handleDrag(event, info) {
+    console.log('Dragging', info.point);
+  }
+  
+  function handleDragEnd(event, info) {
+    console.log('Drag ended', info.point, 'velocity:', info.velocity);
+  }
+</script>
+
+<MotionDiv
+  drag
+  onDragStart={handleDragStart}
+  onDrag={handleDrag}
+  onDragEnd={handleDragEnd}
+  style="
+    width: 100px;
+    height: 100px;
+    background: #0088ff;
+    border-radius: 8px;
+  "
+>
+  Drag me
+</MotionDiv>
+```
+
+The `info` object contains:
+- `point`: Current `{ x, y }` position in pixels
+- `delta`: Movement since last event
+- `offset`: Offset from the drag start point
+- `velocity`: Current velocity in pixels per second
+
+Source: [types.ts:41
+
+## Direction locking
+
+Lock dragging to the initially-detected direction:
+
+```svelte
+<MotionDiv
+  drag
+  dragDirectionLock
+  onDirectionLock={(axis) => console.log('Locked to', axis)}
+  style="
+    width: 100px;
+    height: 100px;
+    background: #00ff88;
+    border-radius: 8px;
+  "
+>
+  Direction locks
+</MotionDiv>
+```
+
+Source: [types.ts:145
+
+<Warning>
+Direction locking determines the primary drag direction based on initial movement. Once locked, the drag will only move in that direction.
+</Warning>
+
+## While dragging animation
+
+Animate properties while dragging using `whileDrag`:
+
+```svelte
+<MotionDiv
+  drag
+  dragConstraints={{ left: 0, right: 300, top: 0, bottom: 300 }}
+  whileDrag={{ scale: 1.1, rotate: 5 }}
+  style="
+    width: 80px;
+    height: 80px;
+    background: #ff0088;
+    border-radius: 8px;
+    cursor: grab;
+  "
+>
+  Scales when dragging
+</MotionDiv>
+```
+
+Source: [types.ts:135
+
+## Drag controls
+
+For advanced use cases, initiate dragging from a different element using `useDragControls`:
+
+```svelte
+<script>
+  import { MotionDiv, useDragControls } from 'motion-start';
+  
+  const dragControls = useDragControls();
+  
+  function startDrag(event) {
+    dragControls.start(event, { snapToCursor: true });
+  }
+</script>
+
+<div>
+  <div 
+    onpointerdown={startDrag}
+    style="
+      padding: 10px;
+      background: #ddd;
+      cursor: move;
+      margin-bottom: 10px;
+    "
+  >
+    Click here to drag
+  </div>
+  
+  <MotionDiv
+    drag="x"
+    dragControls={dragControls}
+    dragListener={false}
+    style="
+      width: 100px;
+      height: 100px;
+      background: #0088ff;
+      border-radius: 8px;
+    "
+  >
+    I'm controlled remotely
+  </MotionDiv>
+</div>
+```
+
+Source: [types.ts:259
+
+<Info>
+Setting `dragListener={false}` prevents the default drag behavior, requiring you to manually trigger dragging via drag controls.
+</Info>
+
+## Drag constraint measurements
+
+Customize how drag constraints are measured:
+
+```svelte
+<script>
+  let constraintsRef = $state();
+  
+  function onMeasureDragConstraints(constraints) {
+    console.log('Measured constraints:', constraints);
+    
+    // Optionally return modified constraints
+    return {
+      top: constraints.top + 20,
+      left: constraints.left + 20,
+      right: constraints.right - 20,
+      bottom: constraints.bottom - 20
+    };
+  }
+</script>
+
+<div bind:this={constraintsRef} style="width: 400px; height: 400px; background: #f0f0f0;">
+  <MotionDiv
+    drag
+    dragConstraints={constraintsRef}
+    onMeasureDragConstraints={onMeasureDragConstraints}
+    style="
+      width: 80px;
+      height: 80px;
+      background: #0088ff;
+      border-radius: 8px;
+    "
+  >
+    Custom constraints
+  </MotionDiv>
+</div>
+```
+
+Source: [types.ts:289
+
+## Complete example: Draggable cards
+
+```svelte
+<script>
+  import { MotionDiv } from 'motion-start';
+  
+  let cards = $state([
+    { id: 1, title: 'Card 1', color: '#ff0088' },
+    { id: 2, title: 'Card 2', color: '#0088ff' },
+    { id: 3, title: 'Card 3', color: '#00ff88' }
+  ]);
+  
+  let containerRef = $state();
+</script>
+
+<div 
+  bind:this={containerRef}
+  style="
+    width: 600px;
+    height: 400px;
+    background: #f5f5f5;
+    border-radius: 12px;
+    position: relative;
+  "
+>
+  {#each cards as card}
+    <MotionDiv
+      drag
+      dragConstraints={containerRef}
+      dragElastic={0.1}
+      whileDrag={{ scale: 1.05, zIndex: 10 }}
+      style="
+        width: 150px;
+        height: 100px;
+        background: {card.color};
+        border-radius: 8px;
+        padding: 20px;
+        cursor: grab;
+        position: absolute;
+      "
+    >
+      <h3 style="color: white; margin: 0;">{card.title}</h3>
+      <p style="color: rgba(255,255,255,0.8); margin: 5px 0 0;">Drag me around!</p>
+    </MotionDiv>
+  {/each}
+</div>
+```
+
+## Drag props reference
+
+<ParamField path="drag" type="boolean | 'x' | 'y'" default={false}>
+  Enable dragging. Set to `true` for both directions, or `"x"` / `"y"` for single-axis dragging.
+</ParamField>
+
+<ParamField path="dragConstraints" type="BoundingBox2D | RefObject" default={false}>
+  Constraints for the draggable area. Can be pixel values or a ref to a container element.
+</ParamField>
+
+<ParamField path="dragElastic" type="number | boolean | BoundingBox2D" default={0.5}>
+  Elasticity of movement outside constraints. 0 = no movement, 1 = full movement.
+</ParamField>
+
+<ParamField path="dragMomentum" type="boolean" default={true}>
+  Whether to apply momentum when drag ends.
+</ParamField>
+
+<ParamField path="dragTransition" type="InertiaOptions">
+  Customize the inertia animation with properties like `bounceStiffness` and `bounceDamping`.
+</ParamField>
+
+<ParamField path="dragPropagation" type="boolean" default={false}>
+  Allow drag gestures to propagate to child components.
+</ParamField>
+
+<ParamField path="dragDirectionLock" type="boolean" default={false}>
+  Lock dragging to the initially-detected direction.
+</ParamField>
+
+<ParamField path="whileDrag" type="VariantLabels | TargetAndTransition">
+  Animation properties to apply while dragging.
+</ParamField>

@@ -1,0 +1,574 @@
+---
+title: Animations
+description: Understand Motion Start's declarative animation system with variants, keyframes, and transition orchestration
+---
+
+## Animation props
+
+Motion Start uses a declarative animation system where you specify target states rather than imperatively controlling animations:
+
+```typescript
+interface AnimationProps {
+  /** Values to animate to, variant label(s), or AnimationControls */
+  animate?: AnimationControls | TargetAndTransition | VariantLabels | boolean
+  
+  /** Properties, variant label or array of variant labels to start in */
+  initial?: boolean | Target | VariantLabels
+  
+  /** A target to animate to when this component is removed from the tree */
+  exit?: TargetAndTransition | VariantLabels
+  
+  /** Variants allow you to define animation states and organize them by name */
+  variants?: Variants
+  
+  /** Default transition */
+  transition?: Transition
+}
+```
+
+## Basic animations
+
+Animate to target values by passing an object to the `animate` prop:
+
+```svelte
+<script>
+  import { Motion } from 'motion-start'
+</script>
+
+<Motion.div
+  initial={{ opacity: 0, scale: 0.8 }}
+  animate={{ opacity: 1, scale: 1 }}
+  transition={{ duration: 0.5 }}
+>
+  Fades in and scales up
+</Motion.div>
+```
+
+<Info>
+When `initial` is set, the component starts from those values and animates to `animate`. Without `initial`, the component starts from its natural state.
+</Info>
+
+## Variants
+
+Variants let you define named animation states and switch between them:
+
+```typescript
+export type Variant = TargetAndTransition | TargetResolver
+
+export type Variants = {
+  [key: string]: Variant
+}
+
+export type TargetAndTransition = TargetWithKeyframes & {
+  transition?: Transition
+  transitionEnd?: Target
+}
+```
+
+```svelte
+<script>
+  import { Motion } from 'motion-start'
+  
+  const variants = {
+    hidden: { 
+      opacity: 0,
+      y: -50
+    },
+    visible: { 
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: 'spring',
+        stiffness: 100
+      }
+    },
+    exit: {
+      opacity: 0,
+      x: 100,
+      transition: { duration: 0.3 }
+    }
+  }
+</script>
+
+<Motion.div
+  variants={variants}
+  initial="hidden"
+  animate="visible"
+  exit="exit"
+>
+  Organized animation states
+</Motion.div>
+```
+
+### Dynamic variants
+
+Variants can be functions that receive custom data, allowing different animations per component:
+
+```typescript
+type TargetResolver = (custom: any, current: Target, velocity: Target) => TargetAndTransition
+```
+
+```svelte
+<script>
+  import { Motion } from 'motion-start'
+  
+  const variants = {
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.1
+      }
+    }),
+    hidden: { opacity: 0, y: 20 }
+  }
+</script>
+
+{#each items as item, i}
+  <Motion.div
+    custom={i}
+    variants={variants}
+    initial="hidden"
+    animate="visible"
+  >
+    {item}
+  </Motion.div>
+{/each}
+```
+
+## Keyframes
+
+Animate through multiple values by passing an array:
+
+```typescript
+export type KeyframesTarget = ResolvedKeyframesTarget | [null, ...CustomValueType[]] | CustomValueType[]
+
+export type ResolvedKeyframesTarget = [null, ...number[]] | number[] | [null, ...string[]] | string[]
+```
+
+```svelte
+<Motion.div
+  animate={{
+    scale: [1, 1.2, 1.1, 1],
+    rotate: [0, 90, 180, 270, 360],
+    backgroundColor: ['#ff0055', '#0099ff', '#00ff88', '#ff0055']
+  }}
+  transition={{ duration: 2, repeat: Infinity }}
+>
+  Keyframe animation
+</Motion.div>
+```
+
+<Note>
+The first value in a keyframe array can be `null` to animate from the current value.
+</Note>
+
+## Transition types
+
+Motion Start supports multiple transition types, each optimized for different animation scenarios:
+
+### Spring (default for transforms)
+
+Spring physics for natural, realistic motion:
+
+```typescript
+export interface Spring extends Repeat {
+  type: 'spring'
+  stiffness?: number  // Higher = more sudden movement (default: 100)
+  damping?: number    // Higher = less oscillation (default: 10)
+  mass?: number       // Higher = more lethargic (default: 1)
+  duration?: number   // Max 10 seconds
+  bounce?: number     // 0 = no bounce, 1 = extremely bouncy (default: 0.25)
+  restSpeed?: number  // End if speed drops below this (default: 0.01)
+  restDelta?: number  // End if distance below this (default: 0.01)
+  velocity?: number   // Initial velocity
+}
+```
+
+```svelte
+<Motion.div
+  animate={{ x: 100 }}
+  transition={{
+    type: 'spring',
+    stiffness: 100,
+    damping: 10,
+    mass: 0.5
+  }}
+>
+  Spring animation
+</Motion.div>
+```
+
+<Tabs>
+  <Tab title="Bouncy">
+    ```svelte
+    <Motion.div
+      animate={{ y: 100 }}
+      transition={{
+        type: 'spring',
+        bounce: 0.6,
+        duration: 0.8
+      }}
+    />
+    ```
+  </Tab>
+  <Tab title="Smooth">
+    ```svelte
+    <Motion.div
+      animate={{ y: 100 }}
+      transition={{
+        type: 'spring',
+        damping: 20,
+        stiffness: 150
+      }}
+    />
+    ```
+  </Tab>
+  <Tab title="Slow">
+    ```svelte
+    <Motion.div
+      animate={{ y: 100 }}
+      transition={{
+        type: 'spring',
+        damping: 30,
+        stiffness: 50,
+        mass: 2
+      }}
+    />
+    ```
+  </Tab>
+</Tabs>
+
+### Tween (duration-based)
+
+Duration-based animations with easing curves:
+
+```typescript
+export interface Tween extends Repeat {
+  type?: 'tween'
+  duration?: number         // In seconds (default: 0.3)
+  ease?: Easing | Easing[]  // Easing function(s)
+  times?: number[]          // Keyframe positions (0-1)
+  easings?: Easing[]        // Easing per keyframe transition
+  from?: number | string    // Starting value
+}
+
+export type Easing =
+  | [number, number, number, number]  // Cubic bezier
+  | 'linear'
+  | 'easeIn' | 'easeOut' | 'easeInOut'
+  | 'circIn' | 'circOut' | 'circInOut'
+  | 'backIn' | 'backOut' | 'backInOut'
+  | 'anticipate'
+  | EasingFunction
+```
+
+```svelte
+<Motion.div
+  animate={{ opacity: 0 }}
+  transition={{
+    duration: 2,
+    ease: [0.17, 0.67, 0.83, 0.67]
+  }}
+>
+  Tween animation
+</Motion.div>
+```
+
+### Inertia (momentum-based)
+
+Deceleration based on initial velocity, ideal for drag release:
+
+```typescript
+export interface Inertia {
+  type: 'inertia'
+  modifyTarget?(v: number): number  // Snap to grid
+  bounceStiffness?: number          // Bounce spring stiffness (default: 500)
+  bounceDamping?: number            // Bounce damping (default: 10)
+  power?: number                    // Higher = further target (default: 0.8)
+  timeConstant?: number             // Deceleration duration (default: 700)
+  restDelta?: number                // End threshold (default: 0.01)
+  min?: number                      // Minimum constraint
+  max?: number                      // Maximum constraint
+  velocity?: number                 // Initial velocity
+}
+```
+
+```svelte
+<Motion.div
+  drag
+  dragTransition={{
+    power: 0.2,
+    timeConstant: 200,
+    modifyTarget: target => Math.round(target / 50) * 50  // Snap to 50px grid
+  }}
+>
+  Drag with inertia
+</Motion.div>
+```
+
+### None (instant)
+
+Instant transitions with no animation:
+
+```typescript
+export interface None {
+  type: false
+}
+```
+
+```svelte
+<Motion.div
+  animate={{ opacity: 0 }}
+  transition={{ type: false }}
+>
+  No animation
+</Motion.div>
+```
+
+## Orchestration
+
+Control the timing and sequencing of animations across component trees:
+
+```typescript
+export interface Orchestration {
+  /** Delay in seconds (default: 0) */
+  delay?: number
+  
+  /** When to animate relative to children */
+  when?: false | 'beforeChildren' | 'afterChildren' | string
+  
+  /** Delay before children animations (seconds) */
+  delayChildren?: number
+  
+  /** Stagger between each child (seconds) */
+  staggerChildren?: number
+  
+  /** Stagger direction: 1 = first to last, -1 = last to first */
+  staggerDirection?: number
+}
+```
+
+```svelte
+<script>
+  import { Motion } from 'motion-start'
+  
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        delayChildren: 0.3,
+        staggerChildren: 0.1
+      }
+    }
+  }
+  
+  const item = {
+    hidden: { y: 20, opacity: 0 },
+    show: { y: 0, opacity: 1 }
+  }
+</script>
+
+<Motion.ul
+  variants={container}
+  initial="hidden"
+  animate="show"
+>
+  {#each items as item}
+    <Motion.li variants={item}>
+      {item}
+    </Motion.li>
+  {/each}
+</Motion.ul>
+```
+
+<Accordion title="Stagger from last to first">
+  Set `staggerDirection: -1` to reverse the stagger order:
+  
+  ```javascript
+  const container = {
+    show: {
+      transition: {
+        staggerChildren: 0.1,
+        staggerDirection: -1
+      }
+    }
+  }
+  ```
+</Accordion>
+
+## Repeating animations
+
+Create looping animations with the repeat options:
+
+```typescript
+export interface Repeat {
+  /** Number of times to repeat (Infinity for perpetual) */
+  repeat?: number
+  
+  /** How to repeat: 'loop', 'reverse', or 'mirror' */
+  repeatType?: 'loop' | 'reverse' | 'mirror'
+  
+  /** Delay between repetitions (seconds) */
+  repeatDelay?: number
+}
+```
+
+<Tabs>
+  <Tab title="Loop">
+    ```svelte
+    <Motion.div
+      animate={{ rotate: 360 }}
+      transition={{
+        duration: 2,
+        repeat: Infinity,
+        repeatType: 'loop',
+        ease: 'linear'
+      }}
+    />
+    ```
+  </Tab>
+  <Tab title="Reverse">
+    ```svelte
+    <Motion.div
+      animate={{ x: 100 }}
+      transition={{
+        duration: 1,
+        repeat: Infinity,
+        repeatType: 'reverse'
+      }}
+    />
+    ```
+  </Tab>
+  <Tab title="Mirror">
+    ```svelte
+    <Motion.div
+      animate={{ scale: 1.5 }}
+      transition={{
+        duration: 1,
+        repeat: Infinity,
+        repeatType: 'mirror',
+        repeatDelay: 0.5
+      }}
+    />
+    ```
+  </Tab>
+</Tabs>
+
+## Exit animations
+
+Animate components when they're removed from the tree using `AnimatePresence`:
+
+```svelte
+<script>
+  import { Motion, AnimatePresence } from 'motion-start'
+  
+  let show = true
+</script>
+
+<AnimatePresence>
+  {#if show}
+    <Motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      transition={{ duration: 0.3 }}
+    >
+      Toggle me
+    </Motion.div>
+  {/if}
+</AnimatePresence>
+```
+
+<Warning>
+Exit animations only work when the component is a direct child of `AnimatePresence`. Make sure to wrap conditional content properly.
+</Warning>
+
+## Animation controls
+
+Programmatically control animations using `AnimationControls`:
+
+```typescript
+export interface AnimationControls {
+  start(definition: ControlsAnimationDefinition, transitionOverride?: Transition): Promise<any>
+  set(definition: ControlsAnimationDefinition): void
+  stop(): void
+}
+```
+
+```svelte
+<script>
+  import { Motion, useAnimation } from 'motion-start'
+  
+  const controls = useAnimation()
+  
+  async function sequence() {
+    await controls.start({ x: 100 })
+    await controls.start({ y: 100 })
+    await controls.start({ x: 0, y: 0 })
+  }
+</script>
+
+<Motion.div animate={controls}>
+  Controlled animation
+</Motion.div>
+
+<button on:click={sequence}>Run sequence</button>
+```
+
+## Transition end values
+
+Set values immediately after an animation completes:
+
+```svelte
+<Motion.div
+  animate={{
+    x: 100,
+    transitionEnd: {
+      display: 'none'
+    }
+  }}
+>
+  Hides after animation
+</Motion.div>
+```
+
+## Per-property transitions
+
+Define different transitions for individual properties:
+
+```svelte
+<Motion.div
+  animate={{ 
+    x: 100, 
+    opacity: 0,
+    scale: 1.5
+  }}
+  transition={{
+    x: { type: 'spring', stiffness: 100 },
+    opacity: { duration: 0.5 },
+    scale: { delay: 0.2, duration: 0.8 }
+  }}
+>
+  Mixed transitions
+</Motion.div>
+```
+
+## Best practices
+
+<Accordion title="Use spring for physical interactions">
+  Spring transitions feel more natural for user-initiated movements like drag, tap, or hover responses.
+</Accordion>
+
+<Accordion title="Use tween for choreographed sequences">
+  Duration-based tweens give you precise control over timing, making them ideal for synchronized animations.
+</Accordion>
+
+<Accordion title="Animate transform and opacity">
+  These properties are GPU-accelerated. Avoid animating layout properties like `width`, `height`, or `top` for better performance.
+</Accordion>
+
+<Accordion title="Leverage variants for complex states">
+  Use variants when you have multiple related animation states. They keep your code organized and enable powerful orchestration features.
+</Accordion>

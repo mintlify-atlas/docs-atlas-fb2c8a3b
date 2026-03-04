@@ -1,0 +1,216 @@
+---
+title: animate
+description: Animate a single value or MotionValue with precise control over transitions and lifecycle events
+---
+
+Animate a single value or a `MotionValue` with full control over the animation transition and lifecycle callbacks.
+
+## Import
+
+```typescript
+import { animate } from 'motion-start'
+```
+
+## Function signature
+
+```typescript
+function animate<V>(
+  from: MotionValue<V> | V,
+  to: ResolvedValueTarget,
+  transition?: AnimationOptions<V>
+): AnimationPlaybackControls
+```
+
+## Parameters
+
+<ParamField path="from" type="MotionValue<V> | V" required>
+  Either a `MotionValue` to animate, or an initial animation value. If you pass a plain value, a `MotionValue` will be created internally.
+</ParamField>
+
+<ParamField path="to" type="ResolvedValueTarget" required>
+  The target value to animate to. Can be either:
+  - A single value: `number | string`
+  - An array of keyframes: `number[] | string[]`
+</ParamField>
+
+<ParamField path="transition" type="AnimationOptions<V>">
+  Animation transition options. Defaults to `{}`. Can include:
+  
+  <Expandable title="properties">
+    <ParamField path="type" type="'tween' | 'spring'">
+      The type of animation. Defaults to `'tween'` for non-physical values and `'spring'` for physical values.
+    </ParamField>
+    
+    <ParamField path="delay" type="number">
+      Delay before the animation starts (in seconds).
+    </ParamField>
+    
+    <ParamField path="duration" type="number">
+      Duration of the animation (in seconds). For tween animations, defaults to `0.3`. For spring animations, this is calculated based on spring physics.
+    </ParamField>
+    
+    <ParamField path="ease" type="Easing | Easing[]">
+      Easing function for tween animations. Can be a preset name like `'easeInOut'`, a cubic bezier array `[number, number, number, number]`, or a custom easing function.
+    </ParamField>
+    
+    <ParamField path="stiffness" type="number">
+      Spring stiffness. Higher values create more sudden movement. Defaults to `100`.
+    </ParamField>
+    
+    <ParamField path="damping" type="number">
+      Spring damping. Higher values reduce oscillation. Defaults to `10`.
+    </ParamField>
+    
+    <ParamField path="mass" type="number">
+      Spring mass. Higher values result in more lethargic movement. Defaults to `1`.
+    </ParamField>
+    
+    <ParamField path="repeat" type="number">
+      Number of times to repeat the animation. Set to `Infinity` for continuous looping.
+    </ParamField>
+    
+    <ParamField path="repeatType" type="'loop' | 'reverse' | 'mirror'">
+      How to repeat the animation:
+      - `'loop'`: Repeats from the start
+      - `'reverse'`: Alternates between forward and backwards
+      - `'mirror'`: Switches from and to values alternately
+    </ParamField>
+    
+    <ParamField path="repeatDelay" type="number">
+      Delay between repetitions (in seconds).
+    </ParamField>
+    
+    <ParamField path="onUpdate" type="(latest: V) => void">
+      Callback fired on every animation frame with the latest animated value.
+    </ParamField>
+    
+    <ParamField path="onPlay" type="() => void">
+      Callback fired when the animation starts playing.
+    </ParamField>
+    
+    <ParamField path="onComplete" type="() => void">
+      Callback fired when the animation completes.
+    </ParamField>
+    
+    <ParamField path="onRepeat" type="() => void">
+      Callback fired when the animation repeats.
+    </ParamField>
+    
+    <ParamField path="onStop" type="() => void">
+      Callback fired when the animation is stopped.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Return value
+
+<ResponseField name="AnimationPlaybackControls" type="object">
+  An object with playback control methods:
+  
+  <Expandable title="properties">
+    <ResponseField name="stop" type="() => void">
+      Stops the animation immediately.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Examples
+
+### Animate a MotionValue
+
+```typescript
+import { useMotionValue, animate } from 'motion-start'
+import { onMount } from 'svelte'
+
+const x = useMotionValue(0)
+
+onMount(() => {
+  const controls = animate(x, 100, {
+    type: 'spring',
+    stiffness: 2000,
+    onComplete: () => console.log('Animation complete!')
+  })
+
+  // Cleanup: stop animation when component unmounts
+  return controls.stop
+})
+```
+
+### Animate a plain value
+
+```typescript
+import { animate } from 'motion-start'
+
+// Animate from 0 to 100
+const controls = animate(0, 100, {
+  duration: 2,
+  ease: 'easeInOut',
+  onUpdate: (latest) => {
+    console.log('Current value:', latest)
+  }
+})
+```
+
+### Animate with keyframes
+
+```typescript
+import { animate } from 'motion-start'
+
+// Animate through multiple values
+const controls = animate(0, [50, 100, 0], {
+  duration: 3,
+  ease: ['easeIn', 'easeOut', 'easeInOut']
+})
+```
+
+### Repeating animation
+
+```typescript
+import { animate } from 'motion-start'
+
+const controls = animate(0, 360, {
+  duration: 2,
+  repeat: Infinity,
+  repeatType: 'loop',
+  onRepeat: () => console.log('Animation repeated')
+})
+
+// Stop after 10 seconds
+setTimeout(() => controls.stop(), 10000)
+```
+
+## Type definitions
+
+```typescript
+export interface AnimationPlaybackControls {
+  stop: () => void
+}
+
+export interface AnimationPlaybackLifecycles<V> {
+  onUpdate?: (latest: V) => void
+  onPlay?: () => void
+  onComplete?: () => void
+  onRepeat?: () => void
+  onStop?: () => void
+}
+
+export type AnimationOptions<V> = (Tween | Spring) &
+  AnimationPlaybackLifecycles<V> & {
+    delay?: number
+    type?: 'tween' | 'spring'
+  }
+
+export type ResolvedValueTarget = 
+  | string 
+  | number 
+  | number[] 
+  | string[] 
+  | [null, ...number[]] 
+  | [null, ...string[]]
+```
+
+## Related APIs
+
+- [useAnimation](/api/use-animation) - Create animation controls for multiple components
+- [AnimationControls](/api/animation-controls) - Control animations across multiple elements
+- [useMotionValue](/api/use-motion-value) - Create and track motion values

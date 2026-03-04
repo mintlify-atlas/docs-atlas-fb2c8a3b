@@ -1,0 +1,299 @@
+---
+title: useAnimation
+description: Create animation controls to orchestrate animations across multiple components in Svelte
+---
+
+Create `AnimationControls` that can be used to manually start, stop, and sequence animations on one or more components. This is the recommended way to create animation controls in Svelte applications.
+
+## Import
+
+```typescript
+import { useAnimation } from 'motion-start'
+```
+
+## Function signature
+
+```typescript
+function useAnimation(): AnimationControls
+```
+
+## Parameters
+
+This function takes no parameters.
+
+## Return value
+
+<ResponseField name="AnimationControls" type="object">
+  An object with methods to control animations across multiple components:
+  
+  <Expandable title="properties">
+    <ResponseField name="start" type="(definition: ControlsAnimationDefinition, transitionOverride?: Transition) => Promise<any>">
+      Starts an animation on all linked components. Returns a Promise that resolves when all animations complete.
+    </ResponseField>
+    
+    <ResponseField name="set" type="(definition: ControlsAnimationDefinition) => void">
+      Instantly sets properties or a variant on all linked components without animation.
+    </ResponseField>
+    
+    <ResponseField name="stop" type="() => void">
+      Stops all animations on linked components.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Usage
+
+The `useAnimation` hook creates animation controls that automatically handle mounting and cleanup. Pass the controls to the `animate` prop of Motion components to link them together.
+
+### Basic example
+
+```svelte
+<script>
+import { Motion, useAnimation } from 'motion-start'
+
+const controls = useAnimation()
+
+function handleClick() {
+  controls.start({
+    x: 100,
+    transition: { duration: 0.5 }
+  })
+}
+</script>
+
+<button on:click={handleClick}>Animate</button>
+
+<Motion let:motion animate={controls}>
+  <div use:motion>I will animate!</div>
+</Motion>
+```
+
+### Multiple components
+
+```svelte
+<script>
+import { Motion, useAnimation } from 'motion-start'
+
+const controls = useAnimation()
+
+function animateAll() {
+  controls.start({
+    scale: 1.5,
+    rotate: 180,
+    transition: { duration: 0.5 }
+  })
+}
+</script>
+
+<button on:click={animateAll}>Animate All</button>
+
+<Motion let:motion animate={controls}>
+  <div use:motion>Box 1</div>
+</Motion>
+
+<Motion let:motion animate={controls}>
+  <div use:motion>Box 2</div>
+</Motion>
+
+<Motion let:motion animate={controls}>
+  <div use:motion>Box 3</div>
+</Motion>
+```
+
+## Examples
+
+### Animate with variants
+
+```svelte
+<script>
+import { Motion, useAnimation } from 'motion-start'
+
+const controls = useAnimation()
+
+const variants = {
+  hidden: { opacity: 0, y: 50 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.5 }
+  }
+}
+
+function show() {
+  controls.start('visible')
+}
+
+function hide() {
+  controls.start('hidden')
+}
+</script>
+
+<button on:click={show}>Show</button>
+<button on:click={hide}>Hide</button>
+
+<Motion let:motion {variants} animate={controls}>
+  <div use:motion>Animated content</div>
+</Motion>
+```
+
+### Sequence animations
+
+```svelte
+<script>
+import { Motion, useAnimation } from 'motion-start'
+
+const controls = useAnimation()
+
+async function sequence() {
+  await controls.start({ x: 100 })
+  await controls.start({ y: 100 })
+  await controls.start({ scale: 1.5 })
+  await controls.start({ rotate: 180 })
+}
+</script>
+
+<button on:click={sequence}>Run Sequence</button>
+
+<Motion let:motion animate={controls}>
+  <div use:motion>Sequenced animation</div>
+</Motion>
+```
+
+### Set values instantly
+
+```svelte
+<script>
+import { Motion, useAnimation } from 'motion-start'
+
+const controls = useAnimation()
+
+function reset() {
+  controls.set({ x: 0, y: 0, scale: 1, rotate: 0 })
+}
+
+function animate() {
+  controls.start({ x: 100, scale: 1.5 })
+}
+</script>
+
+<button on:click={animate}>Animate</button>
+<button on:click={reset}>Reset</button>
+
+<Motion let:motion animate={controls}>
+  <div use:motion>Box</div>
+</Motion>
+```
+
+### Override variant transitions
+
+```svelte
+<script>
+import { Motion, useAnimation } from 'motion-start'
+
+const controls = useAnimation()
+
+const variants = {
+  visible: { opacity: 1, scale: 1 },
+  hidden: { opacity: 0, scale: 0.8 }
+}
+
+function quickShow() {
+  controls.start('visible', { duration: 0.2 })
+}
+
+function slowShow() {
+  controls.start('visible', { duration: 2, ease: 'easeOut' })
+}
+</script>
+
+<button on:click={quickShow}>Quick</button>
+<button on:click={slowShow}>Slow</button>
+
+<Motion let:motion {variants} initial="hidden" animate={controls}>
+  <div use:motion>Variable speed</div>
+</Motion>
+```
+
+### Stop animations
+
+```svelte
+<script>
+import { Motion, useAnimation } from 'motion-start'
+
+const controls = useAnimation()
+
+function startLongAnimation() {
+  controls.start({
+    x: 1000,
+    transition: { duration: 10 }
+  })
+}
+
+function stopAnimation() {
+  controls.stop()
+}
+</script>
+
+<button on:click={startLongAnimation}>Start Long Animation</button>
+<button on:click={stopAnimation}>Stop</button>
+
+<Motion let:motion animate={controls}>
+  <div use:motion>Box</div>
+</Motion>
+```
+
+## Component alternative
+
+You can also use the `UseAnimation` component for slot-based usage:
+
+```svelte
+<script>
+import { UseAnimation, Motion } from 'motion-start'
+</script>
+
+<UseAnimation let:controls>
+  <button on:click={() => controls.start({ x: 100 })}>
+    Animate
+  </button>
+  
+  <Motion let:motion animate={controls}>
+    <div use:motion>Animated box</div>
+  </Motion>
+</UseAnimation>
+```
+
+## Type definitions
+
+```typescript
+export interface AnimationControls {
+  start(
+    definition: ControlsAnimationDefinition,
+    transitionOverride?: Transition
+  ): Promise<any>
+  
+  set(definition: ControlsAnimationDefinition): void
+  
+  stop(): void
+}
+
+export type ControlsAnimationDefinition = 
+  | string 
+  | string[] 
+  | TargetAndTransition 
+  | TargetResolver
+```
+
+## Notes
+
+- The hook automatically handles mounting and cleanup of animation controls
+- Controls can be shared across multiple Motion components
+- The `start` method returns a Promise, allowing you to await animations and create sequences
+- Use `set` for instant updates without animation
+- The `stop` method stops all linked animations immediately
+
+## Related APIs
+
+- [animationControls](/api/animation-controls) - Lower-level function for creating animation controls
+- [animate](/api/animate) - Animate individual values
+- [Motion](/api/motion) - Motion component that accepts animation controls
+- [UseAnimation](/api/use-animation) - Component version for slot-based usage

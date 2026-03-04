@@ -1,97 +1,246 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: Motion Start Documentation
+description: A powerful Svelte animation library inspired by Framer Motion
+mode: custom
 ---
 
-## Setting up
+<div className="relative overflow-hidden bg-gradient-to-br from-[#0a0e1a] via-[#1a1d27] to-[#0a0e1a] dark:from-[#0a0e1a] dark:via-[#1a1d27] dark:to-[#0a0e1a] py-20 border-b border-[#27272a] dark:border-[#27272a]">
+  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(106,90,205,0.15),transparent_50%)]"></div>
+  <div className="max-w-6xl mx-auto px-6 relative z-10">
+    <div className="grid lg:grid-cols-12 gap-12 items-center">
+      <div className="lg:col-span-7">
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white dark:text-white mb-6">
+          Beautiful animations for Svelte
+        </h1>
+        <p className="text-lg sm:text-xl text-gray-300 dark:text-gray-300 max-w-2xl mb-8">
+          Motion Start brings the power of declarative animations to Svelte. Create fluid, performant animations with an intuitive API inspired by Framer Motion.
+        </p>
+        <div className="flex flex-wrap gap-4">
+          <a 
+            href="/quickstart" 
+            className="inline-flex items-center px-6 py-3 bg-[#238636] hover:bg-[#2ea043] text-white font-semibold rounded-lg transition-colors no-underline"
+          >
+            Get started
+            <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </a>
+          <a 
+            href="/api/motion" 
+            className="inline-flex items-center px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/30 text-white font-semibold rounded-lg transition-colors no-underline"
+          >
+            API reference
+          </a>
+        </div>
+      </div>
+      <div className="lg:col-span-5 hidden lg:block">
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-2xl blur-3xl"></div>
+          <img 
+            src="https://media.brand.dev/3b16fb27-22e9-4daa-a368-88b404b0d37e.svg" 
+            alt="Motion Start logo" 
+            noZoom
+            className="relative w-full h-auto max-w-md mx-auto"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-Get your documentation site up and running in minutes.
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4">Quick start</h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">Get up and running with Motion Start in minutes</p>
+  
+  <Steps>
+    <Step title="Install Motion Start">
+      Add Motion Start to your Svelte project using your preferred package manager:
+      
+      <CodeGroup>
+      ```bash npm
+      npm install motion-start
+      ```
+      ```bash pnpm
+      pnpm add motion-start
+      ```
+      ```bash yarn
+      yarn add motion-start
+      ```
+      ```bash bun
+      bun add motion-start
+      ```
+      </CodeGroup>
+    </Step>
+    
+    <Step title="Import the Motion component">
+      Import Motion into your Svelte component:
+      
+      ```svelte
+      <script>
+        import { Motion } from 'motion-start'
+      </script>
+      ```
+    </Step>
+    
+    <Step title="Add your first animation">
+      Create an animated element with declarative props:
+      
+      ```svelte
+      <Motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        Hello, Motion Start!
+      </Motion.div>
+      ```
+      
+      <Info>
+        Motion Start provides animated versions of all HTML and SVG elements via the `Motion` namespace (e.g., `Motion.div`, `Motion.svg`, `Motion.path`).
+      </Info>
+    </Step>
+  </Steps>
+</div>
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4">Key features</h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">Everything you need to create stunning animations</p>
+  
+  <CardGroup cols={2}>
+    <Card title="Declarative animations" icon="wand-magic-sparkles" href="/concepts/animations">
+      Define animations directly in your markup with intuitive props like `animate`, `initial`, and `transition`
+    </Card>
+    <Card title="Gesture support" icon="hand-pointer" href="/concepts/gestures">
+      Built-in support for drag, tap, hover, and pan interactions with smooth, natural feeling animations
+    </Card>
+    <Card title="Motion values" icon="gauge-high" href="/concepts/motion-values">
+      Create reactive, performance-optimized animations with motion values that update without re-renders
+    </Card>
+    <Card title="Spring physics" icon="water" href="/guides/spring-animations">
+      Natural-feeling animations powered by spring physics with customizable stiffness and damping
+    </Card>
+    <Card title="Presence animations" icon="eye" href="/guides/animate-presence">
+      Animate components as they enter and exit the DOM with AnimatePresence
+    </Card>
+    <Card title="Scroll animations" icon="arrows-up-down" href="/guides/scroll-animations">
+      Create scroll-linked animations that respond to viewport and element scroll position
+    </Card>
+    <Card title="TypeScript support" icon="code" href="/installation">
+      Full TypeScript definitions for type-safe animation development
+    </Card>
+    <Card title="Reduced motion" icon="universal-access" href="/advanced/reduced-motion">
+      Automatic support for users who prefer reduced motion for better accessibility
+    </Card>
+  </CardGroup>
+</div>
 
-## Make it yours
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4">Explore by topic</h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">Deep dive into specific features and capabilities</p>
+  
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <a href="/concepts/motion-components" className="group block rounded-2xl border border-gray-200 dark:border-[#27272a] hover:border-[#242b2c] dark:hover:border-[#242b2c] overflow-hidden transition-colors no-underline">
+      <div className="h-32 bg-gradient-to-br from-purple-500/10 to-blue-500/10 dark:from-purple-500/10 dark:to-blue-500/10 flex items-center justify-center overflow-hidden">
+        <svg className="w-16 h-16 text-[#242b2c] dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+        </svg>
+      </div>
+      <div className="p-6 bg-white dark:bg-[#1a1d27]">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">Core concepts</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Learn the fundamentals of Motion Start including components, animations, gestures, and motion values</p>
+        <span className="text-sm font-medium text-[#242b2c] dark:text-white group-hover:text-[#238636] dark:group-hover:text-[#238636] transition-colors inline-flex items-center">
+          Explore concepts
+          <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </span>
+      </div>
+    </a>
+    
+    <a href="/guides/animate-presence" className="group block rounded-2xl border border-gray-200 dark:border-[#27272a] hover:border-[#242b2c] dark:hover:border-[#242b2c] overflow-hidden transition-colors no-underline">
+      <div className="h-32 bg-gradient-to-br from-green-500/10 to-teal-500/10 dark:from-green-500/10 dark:to-teal-500/10 flex items-center justify-center overflow-hidden">
+        <svg className="w-16 h-16 text-[#242b2c] dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      </div>
+      <div className="p-6 bg-white dark:bg-[#1a1d27]">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">Practical guides</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Step-by-step tutorials for common animation patterns like presence, drag-and-drop, and scroll effects</p>
+        <span className="text-sm font-medium text-[#242b2c] dark:text-white group-hover:text-[#238636] dark:group-hover:text-[#238636] transition-colors inline-flex items-center">
+          View guides
+          <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </span>
+      </div>
+    </a>
+    
+    <a href="/api/motion" className="group block rounded-2xl border border-gray-200 dark:border-[#27272a] hover:border-[#242b2c] dark:hover:border-[#242b2c] overflow-hidden transition-colors no-underline">
+      <div className="h-32 bg-gradient-to-br from-orange-500/10 to-red-500/10 dark:from-orange-500/10 dark:to-red-500/10 flex items-center justify-center overflow-hidden">
+        <svg className="w-16 h-16 text-[#242b2c] dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+        </svg>
+      </div>
+      <div className="p-6 bg-white dark:bg-[#1a1d27]">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">API reference</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Complete documentation of all components, hooks, and utilities with TypeScript signatures</p>
+        <span className="text-sm font-medium text-[#242b2c] dark:text-white group-hover:text-[#238636] dark:group-hover:text-[#238636] transition-colors inline-flex items-center">
+          Browse API
+          <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </span>
+      </div>
+    </a>
+    
+    <a href="/advanced/lazy-motion" className="group block rounded-2xl border border-gray-200 dark:border-[#27272a] hover:border-[#242b2c] dark:hover:border-[#242b2c] overflow-hidden transition-colors no-underline">
+      <div className="h-32 bg-gradient-to-br from-pink-500/10 to-purple-500/10 dark:from-pink-500/10 dark:to-purple-500/10 flex items-center justify-center overflow-hidden">
+        <svg className="w-16 h-16 text-[#242b2c] dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      </div>
+      <div className="p-6 bg-white dark:bg-[#1a1d27]">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">Advanced topics</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Master advanced techniques like lazy loading, custom components, and animation orchestration</p>
+        <span className="text-sm font-medium text-[#242b2c] dark:text-white group-hover:text-[#238636] dark:group-hover:text-[#238636] transition-colors inline-flex items-center">
+          Learn advanced
+          <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </span>
+      </div>
+    </a>
+  </div>
+</div>
 
-Design a docs site that looks great and empowers your users.
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4">Resources</h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">Connect with the community and get help</p>
+  
+  <CardGroup cols={2}>
+    <Card title="GitHub repository" icon="github" href="https://github.com/JonathonRP/motion-start">
+      View source code, report issues, and contribute to Motion Start
+    </Card>
+    <Card title="npm package" icon="box" href="https://www.npmjs.com/package/motion-start">
+      Check out releases, download stats, and package details
+    </Card>
+  </CardGroup>
+</div>
 
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
-  </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
-  </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
-  </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
-
-## Create beautiful pages
-
-Everything you need to create world-class documentation.
-
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
-
-## Need inspiration?
-
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<div className="mt-20 mb-16 max-w-5xl mx-auto px-6">
+  <div className="rounded-2xl bg-gradient-to-br from-[#1a1d27] to-[#242838] dark:from-[#1a1d27] dark:to-[#242838] border border-[#27272a] dark:border-[#27272a] p-8 sm:p-12 text-center">
+    <h2 className="text-2xl sm:text-3xl font-bold text-white dark:text-white mb-4">Ready to get started?</h2>
+    <p className="text-base sm:text-lg text-gray-300 dark:text-gray-300 max-w-2xl mx-auto mb-8">
+      Install Motion Start and create your first animation in minutes
+    </p>
+    <a 
+      href="/quickstart" 
+      className="inline-flex items-center px-6 py-3 bg-[#238636] hover:bg-[#2ea043] text-white font-semibold rounded-lg transition-colors no-underline"
+    >
+      View quickstart guide
+      <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      </svg>
+    </a>
+  </div>
+</div>

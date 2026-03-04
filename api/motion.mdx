@@ -1,0 +1,336 @@
+---
+title: motion
+description: Create animated HTML and SVG elements with the motion component proxy
+---
+
+The `motion` component is a proxy that creates animated versions of HTML and SVG elements. You can access any HTML or SVG element by calling `motion.div`, `motion.svg`, etc.
+
+## Import
+
+```javascript
+import { motion } from 'motion-start'
+```
+
+## Usage
+
+You can use `motion` components as drop-in replacements for any HTML or SVG element. All standard HTML/SVG attributes and CSS properties are supported.
+
+```svelte
+<script>
+  import { motion } from 'motion-start'
+</script>
+
+<motion.div
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
+  exit={{ opacity: 0 }}
+>
+  Hello World
+</motion.div>
+```
+
+## Component signature
+
+The `motion` object provides access to all HTML and SVG elements:
+
+```typescript
+motion.div
+motion.button
+motion.span
+motion.svg
+motion.circle
+// ... any HTML or SVG element
+```
+
+## Props
+
+All `motion` components accept the following props in addition to standard HTML/SVG attributes:
+
+### Animation props
+
+<ParamField path="animate" type="AnimationControls | TargetAndTransition | VariantLabels | boolean">
+  Values to animate to, variant label(s), or `AnimationControls`.
+
+  ```svelte
+  <!-- As values -->
+  <motion.div animate={{ opacity: 1 }} />
+
+  <!-- As variant -->
+  <motion.div animate="visible" variants={variants} />
+
+  <!-- Multiple variants -->
+  <motion.div animate={["visible", "active"]} variants={variants} />
+  ```
+</ParamField>
+
+<ParamField path="initial" type="boolean | Target | VariantLabels">
+  Properties, variant label or array of variant labels to start in.
+
+  Set to `false` to initialize with the values in `animate` (disabling the mount animation).
+
+  ```svelte
+  <!-- As values -->
+  <motion.div initial={{ opacity: 1 }} />
+
+  <!-- As variant -->
+  <motion.div initial="visible" variants={variants} />
+
+  <!-- Disable mount animation -->
+  <motion.div initial={false} animate={{ opacity: 0 }} />
+  ```
+</ParamField>
+
+<ParamField path="exit" type="TargetAndTransition | VariantLabels">
+  A target to animate to when this component is removed from the tree.
+
+  This component **must** be a child of an `AnimatePresence` to enable this exit animation.
+
+  ```svelte
+  <AnimatePresence show={isVisible}>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    />
+  </AnimatePresence>
+  ```
+</ParamField>
+
+<ParamField path="variants" type="Variants">
+  Variants allow you to define animation states and organize them by name. They allow you to control animations throughout a component tree by switching a single `animate` prop.
+
+  ```svelte
+  <script>
+    const variants = {
+      active: {
+        backgroundColor: "#f00"
+      },
+      inactive: {
+        backgroundColor: "#fff",
+        transition: { duration: 2 }
+      }
+    }
+  </script>
+
+  <motion.div variants={variants} animate="active" />
+  ```
+</ParamField>
+
+<ParamField path="transition" type="Transition">
+  Default transition. If no `transition` is defined in `animate`, it will use the transition defined here.
+
+  ```svelte
+  <script>
+    const spring = {
+      type: "spring",
+      damping: 10,
+      stiffness: 100
+    }
+  </script>
+
+  <motion.div transition={spring} animate={{ scale: 1.2 }} />
+  ```
+</ParamField>
+
+### Style props
+
+<ParamField path="style" type="MotionStyle">
+  The standard style prop, enhanced with support for `MotionValue`s and separate `transform` values.
+
+  ```svelte
+  <script>
+    import { useMotionValue } from 'motion-start'
+    const x = useMotionValue(0)
+  </script>
+
+  <motion.div style={{ x, opacity: 1, scale: 0.5 }} />
+  ```
+</ParamField>
+
+<ParamField path="transformTemplate" type="(transform: TransformProperties, generatedTransform: string) => string">
+  By default, Motion Start generates a `transform` property with a sensible transform order. `transformTemplate` can be used to create a different order, or to append/prepend the automatically generated `transform` property.
+
+  ```svelte
+  <motion.div
+    style={{ x: 0, rotate: 180 }}
+    transformTemplate={
+      ({ x, rotate }) => `rotate(${rotate}deg) translateX(${x}px)`
+    }
+  />
+  ```
+</ParamField>
+
+### Layout props
+
+<ParamField path="layout" type="boolean | 'position'">
+  If `true`, this component will automatically animate to its new position when its layout changes.
+
+  This performs a layout animation using performant transforms. Part of this technique involves animating an element's scale, which can introduce visual distortions on children, `boxShadow`, and `borderRadius`.
+
+  If set to `"position"`, the size of the component will change instantly and only its position will animate.
+
+  ```svelte
+  <motion.div layout />
+  ```
+</ParamField>
+
+<ParamField path="layoutId" type="string">
+  Enable shared layout transitions between components for children of `AnimateSharedLayout`.
+
+  When a component with a `layoutId` is removed from the tree and then added elsewhere, it will visually animate from the previous component's bounding box and its latest animated values.
+
+  ```svelte
+  <AnimateSharedLayout>
+    {#each items as item (item.id)}
+      <motion.li layout>
+        {item.name}
+        {#if item.isSelected}
+          <motion.div layoutId="underline" />
+        {/if}
+      </motion.li>
+    {/each}
+  </AnimateSharedLayout>
+  ```
+</ParamField>
+
+<ParamField path="onLayoutAnimationComplete" type="() => void">
+  A callback that will fire when a layout animation on this component completes.
+</ParamField>
+
+### Gesture props
+
+<ParamField path="whileHover" type="TargetAndTransition | VariantLabels">
+  Properties or variant label to animate to while the hover gesture is recognized.
+</ParamField>
+
+<ParamField path="whileTap" type="TargetAndTransition | VariantLabels">
+  Properties or variant label to animate to while the component is pressed.
+</ParamField>
+
+<ParamField path="whileFocus" type="TargetAndTransition | VariantLabels">
+  Properties or variant label to animate to while the component has focus.
+</ParamField>
+
+<ParamField path="drag" type="boolean | 'x' | 'y'">
+  Enable dragging for this element. Set to `true` to enable dragging on both axes, or specify `"x"` or `"y"` to constrain dragging to a single axis.
+</ParamField>
+
+<ParamField path="dragConstraints" type="false | Partial<BoundingBox> | RefObject<Element>">
+  Applies constraints on the permitted draggable area.
+</ParamField>
+
+<ParamField path="dragElastic" type="boolean | number">
+  The degree of movement allowed outside constraints. Set to `0` for no movement, `1` for full movement. Defaults to `0.5`.
+</ParamField>
+
+<ParamField path="dragMomentum" type="boolean">
+  If `true`, momentum from the pan gesture will continue movement after the pointer is released. Defaults to `true`.
+</ParamField>
+
+### Advanced props
+
+<ParamField path="custom" type="any">
+  Custom data to use to resolve dynamic variants differently for each animating component.
+
+  ```svelte
+  <script>
+    const variants = {
+      visible: (custom) => ({
+        opacity: 1,
+        transition: { delay: custom * 0.2 }
+      })
+    }
+  </script>
+
+  <motion.div custom={0} animate="visible" variants={variants} />
+  <motion.div custom={1} animate="visible" variants={variants} />
+  ```
+</ParamField>
+
+<ParamField path="inherit" type="boolean" default="true">
+  Set to `false` to prevent inheriting variant changes from its parent.
+</ParamField>
+
+### Lifecycle callbacks
+
+<ParamField path="onUpdate" type="(latest: Target) => void">
+  Called when animation values update.
+</ParamField>
+
+<ParamField path="onAnimationStart" type="() => void">
+  Called when an animation starts.
+</ParamField>
+
+<ParamField path="onAnimationComplete" type="() => void">
+  Called when an animation completes.
+</ParamField>
+
+## Types
+
+### MotionProps
+
+The complete props interface for motion components:
+
+```typescript
+interface MotionProps
+  extends AnimationProps,
+    VisualElementLifecycles,
+    PanHandlers,
+    TapHandlers,
+    HoverHandlers,
+    FocusHandlers,
+    DraggableProps,
+    LayoutProps,
+    MotionAdvancedProps {
+  transformValues?: any;
+  initial?: boolean | Target | VariantLabels;
+  style?: MotionStyle;
+  transformTemplate?(transform: TransformProperties, generatedTransform: string): string;
+}
+```
+
+### MotionStyle
+
+Enhanced style type with support for motion values and transforms:
+
+```typescript
+type MotionStyle = MotionCSS &
+  MotionTransform &
+  MakeMotion<SVGPathProperties>
+```
+
+### TransformProperties
+
+```typescript
+interface TransformProperties {
+  x?: string | number;
+  y?: string | number;
+  z?: string | number;
+  translateX?: string | number;
+  translateY?: string | number;
+  translateZ?: string | number;
+  rotate?: string | number;
+  rotateX?: string | number;
+  rotateY?: string | number;
+  rotateZ?: string | number;
+  scale?: string | number;
+  scaleX?: string | number;
+  scaleY?: string | number;
+  scaleZ?: string | number;
+  skew?: string | number;
+  skewX?: string | number;
+  skewY?: string | number;
+  originX?: string | number;
+  originY?: string | number;
+  originZ?: string | number;
+  perspective?: string | number;
+  transformPerspective?: string | number;
+}
+```
+
+## Related
+
+- [AnimatePresence](/api/animate-presence) - Animate components when they're removed from the tree
+- [AnimateSharedLayout](/api/animate-shared-layout) - Coordinate layout animations across components
+- [MotionConfig](/api/motion-config) - Set configuration options for all motion components
+- [LazyMotion](/api/lazy-motion) - Reduce bundle size with lazy-loaded features
